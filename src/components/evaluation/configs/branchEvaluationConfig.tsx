@@ -5,7 +5,7 @@ import Step4 from "../Step4";
 import Step5 from "../Step5";
 import Step6 from "../Step6";
 import Step7 from "../Step7";
-import OverallAssessment from "../OverallAssessment";
+import OverallAssessmentBranchEval from "../OverallAssessmentBranchEval";
 import { EvaluationStepConfig } from "../types";
 
 // Branch evaluation configuration - can be customized for branch-specific evaluations
@@ -18,6 +18,6 @@ export const branchEvaluationSteps: EvaluationStepConfig[] = [
   { id: 5, title: "Reliability", component: Step5 },
   { id: 6, title: "Ethical & Professional Behavior", component: Step6 },
   { id: 7, title: "Customer Service", component: Step7 },
-  { id: 8, title: "Overall Assessment", component: OverallAssessment },
+  { id: 8, title: "Overall Assessment", component: OverallAssessmentBranchEval },
 ];
 

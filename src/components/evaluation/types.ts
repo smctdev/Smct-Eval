@@ -29,11 +29,23 @@ interface EvaluationPayload {
   qualityOfWorkScore3: number;
   qualityOfWorkScore4: number;
   qualityOfWorkScore5: number;
+  qualityOfWorkScore6?: number; // Branch Manager only
+  qualityOfWorkScore7?: number; // Branch Manager only
+  qualityOfWorkScore8?: number; // Branch Manager only
+  qualityOfWorkScore9?: number; // Branch Manager only
+  qualityOfWorkScore10?: number; // Branch Manager only
+  qualityOfWorkScore11?: number; // Branch Manager only
   qualityOfWorkComments1: string;
   qualityOfWorkComments2: string;
   qualityOfWorkComments3: string;
   qualityOfWorkComments4: string;
   qualityOfWorkComments5: string;
+  qualityOfWorkComments6?: string; // Branch Manager only
+  qualityOfWorkComments7?: string; // Branch Manager only
+  qualityOfWorkComments8?: string; // Branch Manager only
+  qualityOfWorkComments9?: string; // Branch Manager only
+  qualityOfWorkComments10?: string; // Branch Manager only
+  qualityOfWorkComments11?: string; // Branch Manager only
   adaptabilityScore1: number;
   adaptabilityScore2: number;
   adaptabilityScore3: number;

@@ -140,11 +140,23 @@ export default function EvaluationForm({
     qualityOfWorkScore3: 0,
     qualityOfWorkScore4: 0,
     qualityOfWorkScore5: 0,
+    qualityOfWorkScore6: 0, // Branch Manager only
+    qualityOfWorkScore7: 0, // Branch Manager only
+    qualityOfWorkScore8: 0, // Branch Manager only
+    qualityOfWorkScore9: 0, // Branch Manager only
+    qualityOfWorkScore10: 0, // Branch Manager only
+    qualityOfWorkScore11: 0, // Branch Manager only
     qualityOfWorkComments1: "",
     qualityOfWorkComments2: "",
     qualityOfWorkComments3: "",
     qualityOfWorkComments4: "",
     qualityOfWorkComments5: "",
+    qualityOfWorkComments6: "", // Branch Manager only
+    qualityOfWorkComments7: "", // Branch Manager only
+    qualityOfWorkComments8: "", // Branch Manager only
+    qualityOfWorkComments9: "", // Branch Manager only
+    qualityOfWorkComments10: "", // Branch Manager only
+    qualityOfWorkComments11: "", // Branch Manager only
     adaptabilityScore1: 0,
     adaptabilityScore2: 0,
     adaptabilityScore3: 0,
@@ -684,7 +696,8 @@ export default function EvaluationForm({
           } else if (evaluationType === 'basic') {
             const response = await apiService.postBranchBasic(empID, form);
           } else {
-            return console.log("Invalid evaluation type 1");
+            // Default evaluation for HO Area Manager - use standard createSubmission endpoint
+            const response = await apiService.createSubmission(empID, form);
           }
         } else if (isHO) {
           // Head Office evaluator (not Area Manager) - use HO endpoints
@@ -693,7 +706,8 @@ export default function EvaluationForm({
           } else if (evaluationType === 'basic') {
             const response = await apiService.postHoBasic(empID, form);
           } else {
-            return console.log("Invalid evaluation type 2");
+            // Default evaluation for HO - use standard createSubmission endpoint
+            const response = await apiService.createSubmission(empID, form);
           }
         } else {
           // Branch evaluator (not Head Office) - use Branch endpoints
@@ -702,7 +716,8 @@ export default function EvaluationForm({
           } else if (evaluationType === 'basic') {
             const response = await apiService.postBranchBasic(empID, form);
           } else {
-            return console.log("Invalid evaluation type 3");
+            // Default evaluation for branch - use BranchBasic endpoint
+            const response = await apiService.postBranchBasic(empID, form);
           }
         }
       }
@@ -1090,11 +1105,23 @@ export default function EvaluationForm({
                     qualityOfWorkScore3: 0,
                     qualityOfWorkScore4: 0,
                     qualityOfWorkScore5: 0,
+                    qualityOfWorkScore6: 0,
+                    qualityOfWorkScore7: 0,
+                    qualityOfWorkScore8: 0,
+                    qualityOfWorkScore9: 0,
+                    qualityOfWorkScore10: 0,
+                    qualityOfWorkScore11: 0,
                     qualityOfWorkComments1: "",
                     qualityOfWorkComments2: "",
                     qualityOfWorkComments3: "",
                     qualityOfWorkComments4: "",
                     qualityOfWorkComments5: "",
+                    qualityOfWorkComments6: "",
+                    qualityOfWorkComments7: "",
+                    qualityOfWorkComments8: "",
+                    qualityOfWorkComments9: "",
+                    qualityOfWorkComments10: "",
+                    qualityOfWorkComments11: "",
                     adaptabilityScore1: 0,
                     adaptabilityScore2: 0,
                     adaptabilityScore3: 0,

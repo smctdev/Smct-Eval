@@ -1214,6 +1214,63 @@ export default function ViewResultsModal({
 
   if (!submission) return null;
 
+  // Check if the evaluated employee is a branch employee (not HO)
+  // Similar to how Step2.tsx checks for HO to show/hide Job Targets
+  const isEmployeeBranch = () => {
+    if (!submission.employee) return false;
+    
+    // Handle branches as array
+    if (Array.isArray(submission.employee.branches)) {
+      const branch = submission.employee.branches[0];
+      if (branch) {
+        const branchName = branch.branch_name?.toUpperCase() || "";
+        const branchCode = branch.branch_code?.toUpperCase() || "";
+        const isHO = (
+          branchName === "HO" || 
+          branchCode === "HO" || 
+          branchName.includes("HEAD OFFICE") ||
+          branchCode.includes("HEAD OFFICE") ||
+          branchName === "HEAD OFFICE" ||
+          branchCode === "HEAD OFFICE"
+        );
+        // Return true if NOT HO (i.e., is a branch employee)
+        return !isHO;
+      }
+    }
+    
+    // Handle branches as object
+    if (typeof submission.employee.branches === 'object') {
+      const branchName = (submission.employee.branches as any)?.branch_name?.toUpperCase() || "";
+      const branchCode = (submission.employee.branches as any)?.branch_code?.toUpperCase() || "";
+      const isHO = (
+        branchName === "HO" || 
+        branchCode === "HO" || 
+        branchName.includes("HEAD OFFICE") ||
+        branchCode.includes("HEAD OFFICE") ||
+        branchName === "HEAD OFFICE" ||
+        branchCode === "HEAD OFFICE"
+      );
+      // Return true if NOT HO (i.e., is a branch employee)
+      return !isHO;
+    }
+    
+    // Fallback: check if branch field exists directly
+    if ((submission.employee as any).branch) {
+      const branchName = String((submission.employee as any).branch).toUpperCase();
+      const isHO = (
+        branchName === "HO" || 
+        branchName === "HEAD OFFICE" ||
+        branchName.includes("HEAD OFFICE") ||
+        branchName.includes("/HO")
+      );
+      return !isHO;
+    }
+    
+    return false;
+  };
+
+  const isBranchEmp = isEmployeeBranch();
+
   // Determine evaluation type based on submission data
   const hasCustomerService = submission.customer_services && 
     Array.isArray(submission.customer_services) && 
@@ -2178,14 +2235,79 @@ export default function ViewResultsModal({
                           </tr>
                         </thead>
                         <tbody>
-                          {(submission.quality_of_works || []).map(
+                          {(submission.quality_of_works || [])
+                            .filter((item: { question_number: number }) => {
+                              // For branch employees: only show questions 1-5 (up to Job Targets)
+                              // For HO employees: only show questions 1-4 (no Job Targets)
+                              // Questions 6-11 are not shown for branch employees
+                              if (isBranchEmp) {
+                                // Branch employees: show only questions 1-5
+                                return item.question_number <= 5;
+                              } else {
+                                // HO employees: show only questions 1-4 (no Job Targets)
+                                return item.question_number <= 4;
+                              }
+                            })
+                            .map(
                             (item: {
-                              question_number: 1 | 2 | 3 | 4 | 5;
+                              question_number: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
                               score: number;
                               comment: string;
                             }) => {
                               const indicators =
-                                QUALITY_OF_WORK[item.question_number];
+                                QUALITY_OF_WORK[item.question_number as keyof typeof QUALITY_OF_WORK];
+
+                              // Safety check: if indicators don't exist, use fallback
+                              if (!indicators) {
+                                return (
+                                  <tr key={item.question_number}>
+                                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                                      Quality of Work #{item.question_number}
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                                      Branch Manager Evaluation Criteria
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                                      N/A
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-3 text-center font-medium">
+                                      {item.score}
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-3 text-center">
+                                      <div
+                                        className={`px-2 py-1 rounded-md text-sm font-bold ${
+                                          item.score === 5
+                                            ? "bg-green-100 text-green-800"
+                                            : item.score === 4
+                                            ? "bg-blue-100 text-blue-800"
+                                            : item.score === 3
+                                            ? "bg-yellow-100 text-yellow-800"
+                                            : item.score === 2
+                                            ? "bg-orange-100 text-orange-800"
+                                            : item.score === 1
+                                            ? "bg-red-100 text-red-800"
+                                            : "bg-gray-100 text-gray-500"
+                                        }`}
+                                      >
+                                        {item.score === 5
+                                          ? "Outstanding"
+                                          : item.score === 4
+                                          ? "Exceeds Expectation"
+                                          : item.score === 3
+                                          ? "Meets Expectations"
+                                          : item.score === 2
+                                          ? "Needs Improvement"
+                                          : item.score === 1
+                                          ? "Unsatisfactory"
+                                          : "Not Rated"}
+                                      </div>
+                                    </td>
+                                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                                      {item.comment || "No comment"}
+                                    </td>
+                                  </tr>
+                                );
+                              }
 
                               return (
                                 <tr key={item.question_number}>
