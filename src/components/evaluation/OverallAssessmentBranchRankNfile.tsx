@@ -68,7 +68,7 @@ const getRatingColor = (rating: string) => {
   }
 };
 
-export default function OverallAssessmentBranchEval({
+export default function OverallAssessmentBranchRankNfile({
   data,
   updateDataAction,
   employee,
@@ -96,12 +96,7 @@ export default function OverallAssessmentBranchEval({
   const [isLoadingQuarters, setIsLoadingQuarters] = useState(false);
   const [isSubmittingEvaluation, setIsSubmittingEvaluation] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      updateDataAction({ rating: overallWeightedScore });
-    };
-    load();
-  }, []);
+  // Rating will be updated after overallWeightedScore is calculated below
   const handleSubmitEvaluation = async () => {
     // Validate evaluator has a signature
     if (!user?.signature) {
@@ -166,7 +161,7 @@ export default function OverallAssessmentBranchEval({
             
             <div class="print-header">
                 <div class="print-title">COMPLETE PERFORMANCE EVALUATION REPORT</div>
-                <div class="print-subtitle">Employee Performance Evaluation - All Steps (1-7)</div>
+                <div class="print-subtitle">Employee Performance Evaluation - Steps 1-7 (Branch RankNfile - Includes Customer Service)</div>
             </div>
 
             <!-- STEP 1 & 2: Review Type & Employee Information -->
@@ -248,13 +243,13 @@ export default function OverallAssessmentBranchEval({
                         <div class="print-label">Job Knowledge:</div>
                         <div class="print-value">${jobKnowledgeScore.toFixed(
                           2
-                        )} (${getRatingLabel(jobKnowledgeScore)}) - 15%</div>
+                        )} (${getRatingLabel(jobKnowledgeScore)}) - 20%</div>
                     </div>
                     <div class="print-field">
                         <div class="print-label">Quality of Work:</div>
                         <div class="print-value">${qualityOfWorkScore.toFixed(
                           2
-                        )} (${getRatingLabel(qualityOfWorkScore)}) - 15%</div>
+                        )} (${getRatingLabel(qualityOfWorkScore)}) - 20%</div>
                     </div>
                     <div class="print-field">
                         <div class="print-label">Adaptability:</div>
@@ -284,13 +279,7 @@ export default function OverallAssessmentBranchEval({
                         <div class="print-label">Customer Service:</div>
                         <div class="print-value">${customerServiceScore.toFixed(
                           2
-                        )} (${getRatingLabel(customerServiceScore)}) - 25%</div>
-                    </div>
-                    <div class="print-field">
-                        <div class="print-label">Managerial Skills:</div>
-                        <div class="print-value">${managerialSkillsScore.toFixed(
-                          2
-                        )} (${getRatingLabel(managerialSkillsScore)}) - 15%</div>
+                        )} (${getRatingLabel(customerServiceScore)}) - 30%</div>
                     </div>
                 </div>
                 
@@ -396,33 +385,20 @@ export default function OverallAssessmentBranchEval({
   };
 
   const calculateQualityOfWorkScore = () => {
-    // Base Quality of Work scores (always included)
-    const baseScores = [
+    // Include qualityOfWorkScore5 (Job Targets) for branch rankNfile
+    const scores = [
       data.qualityOfWorkScore1,
       data.qualityOfWorkScore2,
       data.qualityOfWorkScore3,
       data.qualityOfWorkScore4,
-    ];
-    
-    // Job Target scores (7 separate targets from newStep2)
-    const jobTargetScores = [
-      data.jobTargetMotorcyclesScore,
-      data.jobTargetAppliancesScore,
-      data.jobTargetCarsScore,
-      data.jobTargetTriWheelersScore,
-      data.jobTargetCollectionScore,
-      data.jobTargetSparepartsLubricantsScore,
-      data.jobTargetShopIncomeScore,
-    ];
-    
-    // Combine all scores
-    const allScores = [...baseScores, ...jobTargetScores]
+      data.qualityOfWorkScore5, // Job Targets included for branch rankNfile
+    ]
       .filter((score) => score && score !== 0)
       .map((score) => parseFloat(String(score)));
 
-    if (allScores.length === 0) return "0.00";
+    if (scores.length === 0) return "0.00";
     return (
-      allScores.reduce((sum, score) => sum + score, 0) / allScores.length
+      scores.reduce((sum, score) => sum + score, 0) / scores.length
     ).toFixed(2);
   };
 
@@ -505,24 +481,6 @@ export default function OverallAssessmentBranchEval({
     ).toFixed(2);
   };
 
-  const calculateManagerialSkillsScore = () => {
-    const scores = [
-      data.managerialSkillsScore1,
-      data.managerialSkillsScore2,
-      data.managerialSkillsScore3,
-      data.managerialSkillsScore4,
-      data.managerialSkillsScore5,
-      data.managerialSkillsScore6,
-    ]
-      .filter((score) => score && score !== 0)
-      .map((score) => parseFloat(String(score)));
-
-    if (scores.length === 0) return "0.00";
-    return (
-      scores.reduce((sum, score) => sum + score, 0) / scores.length
-    ).toFixed(2);
-  };
-
   const getRatingLabel = (score: number) => {
     if (score >= 4.5) return "Outstanding";
     if (score >= 4.0) return "Exceeds Expectations";
@@ -538,20 +496,18 @@ export default function OverallAssessmentBranchEval({
   const reliabilityScore = parseFloat(calculateReliabilityScore());
   const ethicalScore = parseFloat(calculateEthicalScore());
   const customerServiceScore = parseFloat(calculateCustomerServiceScore());
-  const managerialSkillsScore = parseFloat(calculateManagerialSkillsScore());
 
-  // Calculate weighted scores
-  // Adjusted weights to accommodate Managerial Skills (total must equal 1.0)
-  const jobKnowledgeWeighted = (jobKnowledgeScore * 0.15).toFixed(2);
-  const qualityOfWorkWeighted = (qualityOfWorkScore * 0.15).toFixed(2);
+  // Calculate weighted scores (Branch rankNfile: includes Customer Service, NO Managerial Skills)
+  // Weights: 20%, 20%, 10%, 10%, 5%, 5%, 30%
+  const jobKnowledgeWeighted = (jobKnowledgeScore * 0.2).toFixed(2);
+  const qualityOfWorkWeighted = (qualityOfWorkScore * 0.2).toFixed(2);
   const adaptabilityWeighted = (adaptabilityScore * 0.1).toFixed(2);
   const teamworkWeighted = (teamworkScore * 0.1).toFixed(2);
   const reliabilityWeighted = (reliabilityScore * 0.05).toFixed(2);
   const ethicalWeighted = (ethicalScore * 0.05).toFixed(2);
-  const customerServiceWeighted = (customerServiceScore * 0.25).toFixed(2);
-  const managerialSkillsWeighted = (managerialSkillsScore * 0.15).toFixed(2);
+  const customerServiceWeighted = (customerServiceScore * 0.3).toFixed(2);
 
-  // Calculate overall weighted score
+  // Calculate overall weighted score (with Customer Service, without Managerial Skills)
   const overallWeightedScore = (
     parseFloat(jobKnowledgeWeighted) +
     parseFloat(qualityOfWorkWeighted) +
@@ -559,17 +515,23 @@ export default function OverallAssessmentBranchEval({
     parseFloat(teamworkWeighted) +
     parseFloat(reliabilityWeighted) +
     parseFloat(ethicalWeighted) +
-    parseFloat(customerServiceWeighted) +
-    parseFloat(managerialSkillsWeighted)
+    parseFloat(customerServiceWeighted)
   ).toFixed(2);
 
+  // Calculate percentage: total weight is 100% (5.0 out of 5)
   const overallPercentage = (
-    (parseFloat(overallWeightedScore) / 5) *
+    (parseFloat(overallWeightedScore) / 5.0) *
     100
   ).toFixed(2);
+  // Pass threshold: 3.0 out of 5.0
   const isPass = parseFloat(overallWeightedScore) >= 3.0;
 
-  // Calculate completion status - no validation required for step 8
+  // Update rating in data after calculation
+  useEffect(() => {
+    updateDataAction({ rating: overallWeightedScore });
+  }, [overallWeightedScore]);
+
+  // Calculate completion status - no validation required for step 7
   const isComplete = true;
 
   // Auto-save function with indicator
@@ -823,9 +785,19 @@ export default function OverallAssessmentBranchEval({
                 />
               </div>
               <div>
-                <Label className="font-medium">Employee Number:</Label>
+                <Label className="font-medium">Employee ID:</Label>
                 <Input
-                  value={employee?.emp_id ? (employee.emp_id.length > 4 ? `${employee.emp_id.slice(0, 4)}-${employee.emp_id.slice(4)}` : employee.emp_id) : ""}
+                  value={
+                    employee?.emp_id
+                      ? (() => {
+                          const idString = employee.emp_id.toString();
+                          if (idString.length > 4) {
+                            return `${idString.slice(0, 4)}-${idString.slice(4)}`;
+                          }
+                          return idString;
+                        })()
+                      : ""
+                  }
                   readOnly
                   className="mt-1 bg-gray-50"
                   disabled
@@ -1296,312 +1268,47 @@ export default function OverallAssessmentBranchEval({
                     {data.qualityOfWorkComments4 || ""}
                   </td>
                 </tr>
-                {/* Sales Targets for MOTORCYCLES */}
                 <tr>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Sales Targets for MOTORCYCLES
+                    Job Targets
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Achieves branch sales targets for motorcycles
+                    Achieves targets set for their respective position (Sales / CCR / Mechanic / etc.)
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {data.jobTargetMotorcyclesScore || ""}
+                    {data.qualityOfWorkScore5 || ""}
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-center">
                     <div
                       className={`px-2 py-1 rounded text-sm font-medium ${
-                        (data.jobTargetMotorcyclesScore || 0) === 5
+                        data.qualityOfWorkScore5 === 5
                           ? "bg-green-100 text-green-800"
-                          : (data.jobTargetMotorcyclesScore || 0) === 4
+                          : data.qualityOfWorkScore5 === 4
                           ? "bg-blue-100 text-blue-800"
-                          : (data.jobTargetMotorcyclesScore || 0) === 3
+                          : data.qualityOfWorkScore5 === 3
                           ? "bg-yellow-100 text-yellow-800"
-                          : (data.jobTargetMotorcyclesScore || 0) === 2
+                          : data.qualityOfWorkScore5 === 2
                           ? "bg-orange-100 text-orange-800"
-                          : (data.jobTargetMotorcyclesScore || 0) === 1
+                          : data.qualityOfWorkScore5 === 1
                           ? "bg-red-100 text-red-800"
                           : "bg-gray-100 text-gray-500"
                       }`}
                     >
-                      {(data.jobTargetMotorcyclesScore || 0) === 5
+                      {data.qualityOfWorkScore5 === 5
                         ? "Outstanding"
-                        : (data.jobTargetMotorcyclesScore || 0) === 4
+                        : data.qualityOfWorkScore5 === 4
                         ? "Exceeds Expectation"
-                        : (data.jobTargetMotorcyclesScore || 0) === 3
+                        : data.qualityOfWorkScore5 === 3
                         ? "Meets Expectations"
-                        : (data.jobTargetMotorcyclesScore || 0) === 2
+                        : data.qualityOfWorkScore5 === 2
                         ? "Needs Improvement"
-                        : (data.jobTargetMotorcyclesScore || 0) === 1
+                        : data.qualityOfWorkScore5 === 1
                         ? "Unsatisfactory"
                         : "Not Rated"}
                     </div>
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                    {data.jobTargetMotorcyclesComment || ""}
-                  </td>
-                </tr>
-                {/* Sales Targets for APPLIANCES */}
-                <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Sales Targets for APPLIANCES
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Achieves branch sales targets for appliances
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {data.jobTargetAppliancesScore || ""}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <div
-                      className={`px-2 py-1 rounded text-sm font-medium ${
-                        (data.jobTargetAppliancesScore || 0) === 5
-                          ? "bg-green-100 text-green-800"
-                          : (data.jobTargetAppliancesScore || 0) === 4
-                          ? "bg-blue-100 text-blue-800"
-                          : (data.jobTargetAppliancesScore || 0) === 3
-                          ? "bg-yellow-100 text-yellow-800"
-                          : (data.jobTargetAppliancesScore || 0) === 2
-                          ? "bg-orange-100 text-orange-800"
-                          : (data.jobTargetAppliancesScore || 0) === 1
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {(data.jobTargetAppliancesScore || 0) === 5
-                        ? "Outstanding"
-                        : (data.jobTargetAppliancesScore || 0) === 4
-                        ? "Exceeds Expectation"
-                        : (data.jobTargetAppliancesScore || 0) === 3
-                        ? "Meets Expectations"
-                        : (data.jobTargetAppliancesScore || 0) === 2
-                        ? "Needs Improvement"
-                        : (data.jobTargetAppliancesScore || 0) === 1
-                        ? "Unsatisfactory"
-                        : "Not Rated"}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                    {data.jobTargetAppliancesComment || ""}
-                  </td>
-                </tr>
-                {/* Sales Targets for CARS */}
-                <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Sales Targets for CARS
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Achieves branch sales targets for cars
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {data.jobTargetCarsScore || ""}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <div
-                      className={`px-2 py-1 rounded text-sm font-medium ${
-                        (data.jobTargetCarsScore || 0) === 5
-                          ? "bg-green-100 text-green-800"
-                          : (data.jobTargetCarsScore || 0) === 4
-                          ? "bg-blue-100 text-blue-800"
-                          : (data.jobTargetCarsScore || 0) === 3
-                          ? "bg-yellow-100 text-yellow-800"
-                          : (data.jobTargetCarsScore || 0) === 2
-                          ? "bg-orange-100 text-orange-800"
-                          : (data.jobTargetCarsScore || 0) === 1
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {(data.jobTargetCarsScore || 0) === 5
-                        ? "Outstanding"
-                        : (data.jobTargetCarsScore || 0) === 4
-                        ? "Exceeds Expectation"
-                        : (data.jobTargetCarsScore || 0) === 3
-                        ? "Meets Expectations"
-                        : (data.jobTargetCarsScore || 0) === 2
-                        ? "Needs Improvement"
-                        : (data.jobTargetCarsScore || 0) === 1
-                        ? "Unsatisfactory"
-                        : "Not Rated"}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                    {data.jobTargetCarsComment || ""}
-                  </td>
-                </tr>
-                {/* Sales Targets for TRI-WHEELERS */}
-                <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Sales Targets for TRI-WHEELERS (for 3S Shops only)
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Achieves branch sales targets for tri-wheelers
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {data.jobTargetTriWheelersScore || ""}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <div
-                      className={`px-2 py-1 rounded text-sm font-medium ${
-                        (data.jobTargetTriWheelersScore || 0) === 5
-                          ? "bg-green-100 text-green-800"
-                          : (data.jobTargetTriWheelersScore || 0) === 4
-                          ? "bg-blue-100 text-blue-800"
-                          : (data.jobTargetTriWheelersScore || 0) === 3
-                          ? "bg-yellow-100 text-yellow-800"
-                          : (data.jobTargetTriWheelersScore || 0) === 2
-                          ? "bg-orange-100 text-orange-800"
-                          : (data.jobTargetTriWheelersScore || 0) === 1
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {(data.jobTargetTriWheelersScore || 0) === 5
-                        ? "Outstanding"
-                        : (data.jobTargetTriWheelersScore || 0) === 4
-                        ? "Exceeds Expectation"
-                        : (data.jobTargetTriWheelersScore || 0) === 3
-                        ? "Meets Expectations"
-                        : (data.jobTargetTriWheelersScore || 0) === 2
-                        ? "Needs Improvement"
-                        : (data.jobTargetTriWheelersScore || 0) === 1
-                        ? "Unsatisfactory"
-                        : "Not Rated"}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                    {data.jobTargetTriWheelersComment || ""}
-                  </td>
-                </tr>
-                {/* Collection Targets */}
-                <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Collection Targets
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Achieves branch collection targets
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {data.jobTargetCollectionScore || ""}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <div
-                      className={`px-2 py-1 rounded text-sm font-medium ${
-                        (data.jobTargetCollectionScore || 0) === 5
-                          ? "bg-green-100 text-green-800"
-                          : (data.jobTargetCollectionScore || 0) === 4
-                          ? "bg-blue-100 text-blue-800"
-                          : (data.jobTargetCollectionScore || 0) === 3
-                          ? "bg-yellow-100 text-yellow-800"
-                          : (data.jobTargetCollectionScore || 0) === 2
-                          ? "bg-orange-100 text-orange-800"
-                          : (data.jobTargetCollectionScore || 0) === 1
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {(data.jobTargetCollectionScore || 0) === 5
-                        ? "Outstanding"
-                        : (data.jobTargetCollectionScore || 0) === 4
-                        ? "Exceeds Expectation"
-                        : (data.jobTargetCollectionScore || 0) === 3
-                        ? "Meets Expectations"
-                        : (data.jobTargetCollectionScore || 0) === 2
-                        ? "Needs Improvement"
-                        : (data.jobTargetCollectionScore || 0) === 1
-                        ? "Unsatisfactory"
-                        : "Not Rated"}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                    {data.jobTargetCollectionComment || ""}
-                  </td>
-                </tr>
-                {/* Spareparts & Lubricants Targets */}
-                <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Spareparts & Lubricants Targets
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Achieves branch spareparts and lubricants targets
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {data.jobTargetSparepartsLubricantsScore || ""}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <div
-                      className={`px-2 py-1 rounded text-sm font-medium ${
-                        (data.jobTargetSparepartsLubricantsScore || 0) === 5
-                          ? "bg-green-100 text-green-800"
-                          : (data.jobTargetSparepartsLubricantsScore || 0) === 4
-                          ? "bg-blue-100 text-blue-800"
-                          : (data.jobTargetSparepartsLubricantsScore || 0) === 3
-                          ? "bg-yellow-100 text-yellow-800"
-                          : (data.jobTargetSparepartsLubricantsScore || 0) === 2
-                          ? "bg-orange-100 text-orange-800"
-                          : (data.jobTargetSparepartsLubricantsScore || 0) === 1
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {(data.jobTargetSparepartsLubricantsScore || 0) === 5
-                        ? "Outstanding"
-                        : (data.jobTargetSparepartsLubricantsScore || 0) === 4
-                        ? "Exceeds Expectation"
-                        : (data.jobTargetSparepartsLubricantsScore || 0) === 3
-                        ? "Meets Expectations"
-                        : (data.jobTargetSparepartsLubricantsScore || 0) === 2
-                        ? "Needs Improvement"
-                        : (data.jobTargetSparepartsLubricantsScore || 0) === 1
-                        ? "Unsatisfactory"
-                        : "Not Rated"}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                    {data.jobTargetSparepartsLubricantsComment || ""}
-                  </td>
-                </tr>
-                {/* Shop Income Targets */}
-                <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Shop Income Targets
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Achieves branch shop income targets
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {data.jobTargetShopIncomeScore || ""}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <div
-                      className={`px-2 py-1 rounded text-sm font-medium ${
-                        (data.jobTargetShopIncomeScore || 0) === 5
-                          ? "bg-green-100 text-green-800"
-                          : (data.jobTargetShopIncomeScore || 0) === 4
-                          ? "bg-blue-100 text-blue-800"
-                          : (data.jobTargetShopIncomeScore || 0) === 3
-                          ? "bg-yellow-100 text-yellow-800"
-                          : (data.jobTargetShopIncomeScore || 0) === 2
-                          ? "bg-orange-100 text-orange-800"
-                          : (data.jobTargetShopIncomeScore || 0) === 1
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {(data.jobTargetShopIncomeScore || 0) === 5
-                        ? "Outstanding"
-                        : (data.jobTargetShopIncomeScore || 0) === 4
-                        ? "Exceeds Expectation"
-                        : (data.jobTargetShopIncomeScore || 0) === 3
-                        ? "Meets Expectations"
-                        : (data.jobTargetShopIncomeScore || 0) === 2
-                        ? "Needs Improvement"
-                        : (data.jobTargetShopIncomeScore || 0) === 1
-                        ? "Unsatisfactory"
-                        : "Not Rated"}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                    {data.jobTargetShopIncomeComment || ""}
+                    {data.qualityOfWorkComments5 || ""}
                   </td>
                 </tr>
               </tbody>
@@ -2684,334 +2391,6 @@ export default function OverallAssessmentBranchEval({
         </CardContent>
       </Card>
 
-      {/* VIII. MANAGERIAL SKILLS */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <h4 className="font-bold text-lg text-gray-900 mb-4">
-            VIII. MANAGERIAL SKILLS
-          </h4>
-          <p className="text-sm text-gray-600 mb-4">
-            Leadership capabilities. Team management and development. Decision-making and strategic thinking. Performance management and coaching.
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900 w-16"></th>
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900 w-1/4">
-                    Behavioral Indicators
-                  </th>
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900 w-1/3">
-                    Example
-                  </th>
-                  <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900 w-24">
-                    Score
-                  </th>
-                  <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900 w-32">
-                    Rating
-                  </th>
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
-                    Explanation
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Row 1: Leadership */}
-                <tr>
-                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
-                    Leadership
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Guides the team to meet goals and improve performance
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Encourages the team to complete a critical project ahead of the deadline while maintaining quality.
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {data.managerialSkillsScore1 || ""}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <div
-                      className={`px-2 py-1 rounded text-sm font-medium ${
-                        data.managerialSkillsScore1 === 5
-                          ? "bg-green-100 text-green-800"
-                          : data.managerialSkillsScore1 === 4
-                          ? "bg-blue-100 text-blue-800"
-                          : data.managerialSkillsScore1 === 3
-                          ? "bg-yellow-100 text-yellow-800"
-                          : data.managerialSkillsScore1 === 2
-                          ? "bg-orange-100 text-orange-800"
-                          : data.managerialSkillsScore1 === 1
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {data.managerialSkillsScore1 === 5
-                        ? "Outstanding"
-                        : data.managerialSkillsScore1 === 4
-                        ? "Exceeds Expectation"
-                        : data.managerialSkillsScore1 === 3
-                        ? "Meets Expectations"
-                        : data.managerialSkillsScore1 === 2
-                        ? "Needs Improvement"
-                        : data.managerialSkillsScore1 === 1
-                        ? "Unsatisfactory"
-                        : "Not Rated"}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                    {data.managerialSkillsExplanation1 || ""}
-                  </td>
-                </tr>
-                {/* Row 2: Motivation */}
-                <tr>
-                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
-                    Motivation
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Keeps the team engaged and focused on achieving goals and targets
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Recognizes and rewards team achievements to maintain high morale and engagement.
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {data.managerialSkillsScore2 || ""}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <div
-                      className={`px-2 py-1 rounded text-sm font-medium ${
-                        data.managerialSkillsScore2 === 5
-                          ? "bg-green-100 text-green-800"
-                          : data.managerialSkillsScore2 === 4
-                          ? "bg-blue-100 text-blue-800"
-                          : data.managerialSkillsScore2 === 3
-                          ? "bg-yellow-100 text-yellow-800"
-                          : data.managerialSkillsScore2 === 2
-                          ? "bg-orange-100 text-orange-800"
-                          : data.managerialSkillsScore2 === 1
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {data.managerialSkillsScore2 === 5
-                        ? "Outstanding"
-                        : data.managerialSkillsScore2 === 4
-                        ? "Exceeds Expectation"
-                        : data.managerialSkillsScore2 === 3
-                        ? "Meets Expectations"
-                        : data.managerialSkillsScore2 === 2
-                        ? "Needs Improvement"
-                        : data.managerialSkillsScore2 === 1
-                        ? "Unsatisfactory"
-                        : "Not Rated"}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                    {data.managerialSkillsExplanation2 || ""}
-                  </td>
-                </tr>
-                {/* Row 3: Decision-Making */}
-                <tr>
-                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
-                    Decision-Making
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Makes timely and informed decisions that benefit the department or company
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Evaluates a situation, assesses needs, considers alternatives, and implements solutions that benefit the team and the company.
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {data.managerialSkillsScore3 || ""}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <div
-                      className={`px-2 py-1 rounded text-sm font-medium ${
-                        data.managerialSkillsScore3 === 5
-                          ? "bg-green-100 text-green-800"
-                          : data.managerialSkillsScore3 === 4
-                          ? "bg-blue-100 text-blue-800"
-                          : data.managerialSkillsScore3 === 3
-                          ? "bg-yellow-100 text-yellow-800"
-                          : data.managerialSkillsScore3 === 2
-                          ? "bg-orange-100 text-orange-800"
-                          : data.managerialSkillsScore3 === 1
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {data.managerialSkillsScore3 === 5
-                        ? "Outstanding"
-                        : data.managerialSkillsScore3 === 4
-                        ? "Exceeds Expectation"
-                        : data.managerialSkillsScore3 === 3
-                        ? "Meets Expectations"
-                        : data.managerialSkillsScore3 === 2
-                        ? "Needs Improvement"
-                        : data.managerialSkillsScore3 === 1
-                        ? "Unsatisfactory"
-                        : "Not Rated"}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                    {data.managerialSkillsExplanation3 || ""}
-                  </td>
-                </tr>
-                {/* Row 4: Planning & Resource Management */}
-                <tr>
-                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
-                    Planning & Resource Management
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Creates detailed plans and allocates resources, time, and budget efficiently
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Develops a timeline for team deliverables, ensuring tasks are assigned based on workload and skills.
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {data.managerialSkillsScore4 || ""}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <div
-                      className={`px-2 py-1 rounded text-sm font-medium ${
-                        data.managerialSkillsScore4 === 5
-                          ? "bg-green-100 text-green-800"
-                          : data.managerialSkillsScore4 === 4
-                          ? "bg-blue-100 text-blue-800"
-                          : data.managerialSkillsScore4 === 3
-                          ? "bg-yellow-100 text-yellow-800"
-                          : data.managerialSkillsScore4 === 2
-                          ? "bg-orange-100 text-orange-800"
-                          : data.managerialSkillsScore4 === 1
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {data.managerialSkillsScore4 === 5
-                        ? "Outstanding"
-                        : data.managerialSkillsScore4 === 4
-                        ? "Exceeds Expectation"
-                        : data.managerialSkillsScore4 === 3
-                        ? "Meets Expectations"
-                        : data.managerialSkillsScore4 === 2
-                        ? "Needs Improvement"
-                        : data.managerialSkillsScore4 === 1
-                        ? "Unsatisfactory"
-                        : "Not Rated"}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                    {data.managerialSkillsExplanation4 || ""}
-                  </td>
-                </tr>
-                {/* Row 5: Performance Feedback */}
-                <tr>
-                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
-                    Performance Feedback
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Regularly monitors performance and gives constructive feedback
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Holds one-on-one meetings to discuss individual performance and offer guidance for improvement.
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {data.managerialSkillsScore5 || ""}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <div
-                      className={`px-2 py-1 rounded text-sm font-medium ${
-                        data.managerialSkillsScore5 === 5
-                          ? "bg-green-100 text-green-800"
-                          : data.managerialSkillsScore5 === 4
-                          ? "bg-blue-100 text-blue-800"
-                          : data.managerialSkillsScore5 === 3
-                          ? "bg-yellow-100 text-yellow-800"
-                          : data.managerialSkillsScore5 === 2
-                          ? "bg-orange-100 text-orange-800"
-                          : data.managerialSkillsScore5 === 1
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {data.managerialSkillsScore5 === 5
-                        ? "Outstanding"
-                        : data.managerialSkillsScore5 === 4
-                        ? "Exceeds Expectation"
-                        : data.managerialSkillsScore5 === 3
-                        ? "Meets Expectations"
-                        : data.managerialSkillsScore5 === 2
-                        ? "Needs Improvement"
-                        : data.managerialSkillsScore5 === 1
-                        ? "Unsatisfactory"
-                        : "Not Rated"}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                    {data.managerialSkillsExplanation5 || ""}
-                  </td>
-                </tr>
-                {/* Row 6: Conflict Resolution */}
-                <tr>
-                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
-                    Conflict Resolution
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Resolves disagreements professionally and fairly
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Mediates conflict between team members, ensuring a collaborative solution that benefits the group.
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {data.managerialSkillsScore6 || ""}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <div
-                      className={`px-2 py-1 rounded text-sm font-medium ${
-                        data.managerialSkillsScore6 === 5
-                          ? "bg-green-100 text-green-800"
-                          : data.managerialSkillsScore6 === 4
-                          ? "bg-blue-100 text-blue-800"
-                          : data.managerialSkillsScore6 === 3
-                          ? "bg-yellow-100 text-yellow-800"
-                          : data.managerialSkillsScore6 === 2
-                          ? "bg-orange-100 text-orange-800"
-                          : data.managerialSkillsScore6 === 1
-                          ? "bg-red-100 text-red-800"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {data.managerialSkillsScore6 === 5
-                        ? "Outstanding"
-                        : data.managerialSkillsScore6 === 4
-                        ? "Exceeds Expectation"
-                        : data.managerialSkillsScore6 === 3
-                        ? "Meets Expectations"
-                        : data.managerialSkillsScore6 === 2
-                        ? "Needs Improvement"
-                        : data.managerialSkillsScore6 === 1
-                        ? "Unsatisfactory"
-                        : "Not Rated"}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                    {data.managerialSkillsExplanation6 || ""}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-4 text-center">
-            <div className="inline-block px-4 py-2 bg-blue-100 text-blue-800 rounded-lg">
-              <strong>
-                Average: {calculateManagerialSkillsScore()} | Rating:{" "}
-                {getRatingLabel(parseFloat(calculateManagerialSkillsScore()))}
-              </strong>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Performance Assessment Table */}
       <Card>
         <CardContent className="pt-6">
@@ -3058,7 +2437,7 @@ export default function OverallAssessmentBranchEval({
                     {jobKnowledgeScore.toFixed(2)}
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    15%
+                    20%
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-center font-medium">
                     {jobKnowledgeWeighted}
@@ -3086,7 +2465,7 @@ export default function OverallAssessmentBranchEval({
                     {qualityOfWorkScore.toFixed(2)}
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    15%
+                    20%
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-center font-medium">
                     {qualityOfWorkWeighted}
@@ -3226,48 +2605,28 @@ export default function OverallAssessmentBranchEval({
                     {customerServiceScore.toFixed(2)}
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    25%
+                    30%
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-center font-medium">
                     {customerServiceWeighted}
                   </td>
                 </tr>
 
-                {/* Managerial Skills */}
-                <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                    Managerial Skills
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center">
-                    <div className="flex items-center justify-center space-x-1">
-                      <span
-                        className={`px-2 py-1 rounded text-sm font-medium ${getRatingColor(
-                          getRatingLabel(managerialSkillsScore)
-                        )}`}
-                      >
-                        {getRatingLabel(managerialSkillsScore)}
-                      </span>
-                      {getRatingIcon(getRatingLabel(managerialSkillsScore))}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {managerialSkillsScore.toFixed(2)}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    15%
-                  </td>
-                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                    {managerialSkillsWeighted}
-                  </td>
-                </tr>
+                {/* Customer Service is not included in RankNfile HO evaluation */}
 
                 {/* Overall Performance Rating */}
                 <tr className="bg-gray-50">
-                  <td
-                    colSpan={4}
-                    className="border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700"
-                  >
+                  <td className="border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700">
                     Overall Performance Rating
+                  </td>
+                  <td
+                    colSpan={2}
+                    className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700"
+                  >
+                    {/* Rating and Score columns spanned */}
+                  </td>
+                  <td className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                    {/* Weight column - empty */}
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-center font-medium">
                     {overallWeightedScore}
@@ -3496,19 +2855,19 @@ export default function OverallAssessmentBranchEval({
               }
             }}
             className={`px-8 py-3 text-lg bg-green-600 hover:bg-green-700 text-white
-    flex items-center justify-center cursor-pointer hover:scale-110 transition-transform duration-200
+    flex items-center justify-center transition-all duration-200
     ${
       isSubmittingEvaluation
         ? "opacity-70 cursor-not-allowed hover:scale-100"
-        : ""
+        : "cursor-pointer hover:scale-110"
     }
   `}
             size="lg"
           >
             {isSubmittingEvaluation ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Submitting...</span>
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin text-white" />
+                <span className="font-medium">Submitting Evaluation...</span>
               </div>
             ) : (
               <>

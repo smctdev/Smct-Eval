@@ -19,6 +19,7 @@ interface Step7Props {
   updateDataAction: (updates: Partial<EvaluationPayload>) => void;
   employee?: User | null;
   onNextAction?: () => void;
+  evaluationType?: 'rankNfile' | 'basic' | 'default'; // Optional: evaluation type to determine context
 }
 
 // Score Dropdown Component
@@ -141,6 +142,7 @@ export default function Step7({
   data,
   updateDataAction,
   onNextAction,
+  evaluationType = 'default',
 }: Step7Props) {
   const { user } = useAuth();
   
@@ -168,10 +170,38 @@ export default function Step7({
     return false;
   };
 
+  // Check if evaluator is Area Manager
+  const isEvaluatorAreaManager = () => {
+    if (!user?.positions) return false;
+    
+    // Get position name from various possible fields
+    const positionName = (
+      user.positions?.label || 
+      user.positions?.name || 
+      (user as any).position ||
+      ""
+    ).toLowerCase().trim();
+    
+    // Check if position is Area Manager
+    return (
+      positionName === "area manager" ||
+      positionName.includes("area manager")
+    );
+  };
+
+  // Customer Service visibility logic:
+  // - ALWAYS show for branch evaluations (evaluationType === 'default' or undefined)
+  // - ALWAYS show for HO Area Managers (they do branch evaluations)
+  // - Hide ONLY for HO evaluators doing rankNfile or basic evaluations (but NOT Area Managers)
   const isHO = isEvaluatorHO();
+  const isAreaMgr = isEvaluatorAreaManager();
+  const isBranchEvaluation = !evaluationType || evaluationType === 'default';
   
-  // If evaluator is HO, show a message that this step is not applicable
-  if (isHO) {
+  // Only hide Customer Service for HO evaluators doing rankNfile or basic (NOT for branch evaluations, NOT for HO Area Managers)
+  const shouldHideCustomerService = !isAreaMgr && !isBranchEvaluation && (evaluationType === 'rankNfile' || evaluationType === 'basic') && isHO;
+  
+  // If this step should be hidden, show a message
+  if (shouldHideCustomerService) {
     return (
       <div className="space-y-6">
         <Card className="bg-gray-50 border-gray-200">
@@ -271,7 +301,7 @@ export default function Step7({
               <tbody>
                 {/* Row 1: Listening & Understanding */}
                 <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
                     Listening & Understanding
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -340,7 +370,7 @@ export default function Step7({
 
                 {/* Row 2: Problem-Solving for Customer Satisfaction */}
                 <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                  <td className="border border-gray-300 font-bold text-center px-4 py-3 text-sm text-black">
                     Problem-Solving for Customer Satisfaction
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -409,7 +439,7 @@ export default function Step7({
 
                 {/* Row 3: Product Knowledge for Customer Support */}
                 <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
                     Product Knowledge for Customer Support (L.E.A.D.E.R.)
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -479,7 +509,7 @@ export default function Step7({
 
                 {/* Row 4: Positive and Professional Attitude */}
                 <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
                     Positive and Professional Attitude (L.E.A.D.E.R.)
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -548,7 +578,7 @@ export default function Step7({
 
                 {/* Row 5: Timely Resolution of Customer Issues */}
                 <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
                     Timely Resolution of Customer Issues (L.E.A.D.E.R.)
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">

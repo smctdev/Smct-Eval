@@ -29,6 +29,22 @@ interface EvaluationPayload {
   qualityOfWorkScore3: number;
   qualityOfWorkScore4: number;
   qualityOfWorkScore5: number;
+  // Job Targets scores (replacing single Job Targets with multiple target types)
+  jobTargetMotorcyclesScore?: number;
+  jobTargetAppliancesScore?: number;
+  jobTargetCarsScore?: number;
+  jobTargetTriWheelersScore?: number;
+  jobTargetCollectionScore?: number;
+  jobTargetSparepartsLubricantsScore?: number;
+  jobTargetShopIncomeScore?: number;
+  // Job Targets comments
+  jobTargetMotorcyclesComment?: string;
+  jobTargetAppliancesComment?: string;
+  jobTargetCarsComment?: string;
+  jobTargetTriWheelersComment?: string;
+  jobTargetCollectionComment?: string;
+  jobTargetSparepartsLubricantsComment?: string;
+  jobTargetShopIncomeComment?: string;
   qualityOfWorkScore6?: number; // Branch Manager only
   qualityOfWorkScore7?: number; // Branch Manager only
   qualityOfWorkScore8?: number; // Branch Manager only

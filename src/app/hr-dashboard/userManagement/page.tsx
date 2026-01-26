@@ -1720,6 +1720,7 @@ export default function UserManagementTab() {
               ) : (
                 <BranchEvaluationForm
                   employee={selectedEmployeeForEvaluation}
+                  evaluationType="rankNfile"
                   onCloseAction={() => {
                     setIsEvaluationModalOpen(false);
                     setSelectedEmployee(null);
@@ -1743,6 +1744,7 @@ export default function UserManagementTab() {
               ) : (
                 <BranchEvaluationForm
                   employee={selectedEmployeeForEvaluation}
+                  evaluationType="rankNfile"
                   onCloseAction={() => {
                     setIsEvaluationModalOpen(false);
                     setSelectedEmployee(null);

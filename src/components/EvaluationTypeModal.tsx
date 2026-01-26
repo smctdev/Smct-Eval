@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Briefcase, ArrowRight } from "lucide-react";
 import { useDialogAnimation } from "@/hooks/useDialogAnimation";
+import { useAuth } from "@/contexts/UserContext";
 
 interface EvaluationTypeModalProps {
   isOpen: boolean;
@@ -28,6 +29,50 @@ export default function EvaluationTypeModal({
   employeeName,
 }: EvaluationTypeModalProps) {
   const dialogAnimationClass = useDialogAnimation({ duration: 0.4 });
+  const { user } = useAuth();
+
+  // Check if evaluator is HO Area Manager
+  const isHOAreaManager = () => {
+    if (!user?.positions || !user?.branches) return false;
+    
+    // Check if position is Area Manager
+    const positionName = (
+      user.positions?.label || 
+      user.positions?.name || 
+      (user as any).position ||
+      ""
+    ).toLowerCase().trim();
+    
+    const isAreaManager = (
+      positionName === "area manager" ||
+      positionName.includes("area manager")
+    );
+    
+    if (!isAreaManager) return false;
+    
+    // Check if branch is HO
+    let branchName = "";
+    if (Array.isArray(user.branches)) {
+      branchName = (user.branches[0]?.branch_name || 
+                   user.branches[0]?.name || 
+                   "").toUpperCase();
+    } else if (typeof user.branches === 'object') {
+      branchName = ((user.branches as any)?.branch_name || 
+                   (user.branches as any)?.name || 
+                   "").toUpperCase();
+    }
+    
+    const isHO = (
+      branchName === "HO" || 
+      branchName === "HEAD OFFICE" ||
+      branchName.includes("HEAD OFFICE") ||
+      branchName.includes("/HO")
+    );
+    
+    return isAreaManager && isHO;
+  };
+
+  const hideRankNfile = isHOAreaManager();
 
   const handleSelectEmployee = () => {
     onSelectEmployeeAction();
@@ -53,12 +98,13 @@ export default function EvaluationTypeModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8 px-2">
-          {/* Employee Evaluation Option */}
-          <Card
-            className="cursor-pointer hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-500 group"
-            onClick={handleSelectEmployee}
-          >
+        <div className={`grid gap-6 mt-8 px-2 ${hideRankNfile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
+          {/* Employee Evaluation Option - Hide for HO Area Managers */}
+          {!hideRankNfile && (
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-500 group"
+              onClick={handleSelectEmployee}
+            >
             <CardContent className="p-6">
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
@@ -93,6 +139,7 @@ export default function EvaluationTypeModal({
               </div>
             </CardContent>
           </Card>
+          )}
 
           {/* Manager Evaluation Option */}
           <Card

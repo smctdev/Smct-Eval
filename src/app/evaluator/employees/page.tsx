@@ -745,6 +745,7 @@ export default function EmployeesTab() {
               ) : (
                 <BranchEvaluationForm
                   employee={selectedEmployeeForEvaluation}
+                  evaluationType="rankNfile"
                   onCloseAction={() => {
                     setIsEvaluationModalOpen(false);
                     setSelectedEmployee(null);

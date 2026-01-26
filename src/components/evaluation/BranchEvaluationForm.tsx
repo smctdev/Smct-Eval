@@ -1,7 +1,6 @@
 "use client";
 
 import EvaluationForm from "./index";
-import { branchEvaluationSteps } from "./configs";
 import { User } from "../../contexts/UserContext";
 
 interface BranchEvaluationFormProps {
@@ -24,16 +23,16 @@ export default function BranchEvaluationForm({
   onCancelAction,
   evaluationType = 'default',
 }: BranchEvaluationFormProps) {
-  // For branch evaluations, you can customize the employee data
-  // or create a branch-specific user object if needed
-  // This is a template that can be extended based on your branch evaluation requirements
+  // Don't pass custom steps - let EvaluationForm determine the correct steps
+  // based on evaluationType and evaluator type (branch rankNfile uses branchRankNfileSteps)
+  // This allows the logic in index.tsx to properly route to branchRankNfileSteps
+  // when evaluationType === 'rankNfile' for branch evaluators
 
   return (
     <EvaluationForm
       employee={employee}
       onCloseAction={onCloseAction}
       onCancelAction={onCancelAction}
-      steps={branchEvaluationSteps}
       evaluationType={evaluationType}
     />
   );

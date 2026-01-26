@@ -24,7 +24,7 @@ import { storeEvaluationResult } from "@/lib/evaluationStorage";
 import { apiService } from "@/lib/apiService";
 import { createEvaluationNotification } from "@/lib/notificationUtils";
 import { User, useAuth } from "../../contexts/UserContext";
-import { branchEvaluationSteps } from "./configs";
+import { branchEvaluationSteps, branchRankNfileSteps } from "./configs";
 
 // Default steps use branch evaluation configuration
 const defaultSteps: EvaluationStepConfig[] = branchEvaluationSteps;
@@ -47,9 +47,6 @@ export default function EvaluationForm({
   const [currentStep, setCurrentStep] = useState(0); // 0 = welcome step, 1-N = actual steps
   const [welcomeAnimationKey, setWelcomeAnimationKey] = useState(0);
   const { user } = useAuth();
-  
-  // Use custom steps if provided, otherwise use default steps
-  const baseSteps = customSteps || defaultSteps;
   
   // Check if evaluator's branch is HO (Head Office)
   const isEvaluatorHO = () => {
@@ -89,17 +86,64 @@ export default function EvaluationForm({
     return false;
   };
 
+  // Check if evaluator is Area Manager
+  const isEvaluatorAreaManager = () => {
+    if (!user?.positions) return false;
+    
+    // Get position name from various possible fields
+    const positionName = (
+      user.positions?.label || 
+      user.positions?.name || 
+      (user as any).position ||
+      ""
+    ).toLowerCase().trim();
+    
+    // Check if position is Area Manager
+    return (
+      positionName === "area manager" ||
+      positionName.includes("area manager")
+    );
+  };
+
   const isHO = isEvaluatorHO();
+  const isAreaMgr = isEvaluatorAreaManager();
+  
+  // Determine base steps based on evaluator type and evaluation type
+  // - HO Area Managers: always use branchEvaluationSteps
+  // - Branch rankNfile: use branchRankNfileSteps (Step2 with only "Job Targets", not 7 rows)
+  // - Otherwise: use custom steps if provided, or default steps
+  const baseSteps = (() => {
+    // HO Area Managers always use branch evaluation steps (override custom steps)
+    if (isHO && isAreaMgr) {
+      return branchEvaluationSteps;
+    }
+    
+    // Branch rankNfile evaluations use branchRankNfileSteps (Step2 with only "Job Targets", Customer Service, NO Managerial Skills)
+    // This is different from HO rankNfile which has no Customer Service
+    if (!isHO && evaluationType === 'rankNfile') {
+      return branchRankNfileSteps;
+    }
+    
+    // Use custom steps if provided, otherwise default steps
+    return customSteps || defaultSteps;
+  })();
   
   // Filter steps based on HO status and evaluation type
-  // For default evaluation type, remove Step 7 for HO evaluators
-  // For custom steps, use them as-is
+  // For HO Area Managers: use branchEvaluationSteps (already set in baseSteps), keep Step 7
+  // For other HO evaluators: remove Step 7 (Customer Service)
+  // For custom steps (non-Area Manager): use them as-is
   const filteredSteps = (() => {
+    // HO Area Managers should always use branchEvaluationSteps (includes Step 7)
+    if (isHO && isAreaMgr) {
+      return baseSteps; // Already set to branchEvaluationSteps, includes Step 7
+    }
+    
+    // For other cases with custom steps, use them as-is
     if (customSteps) {
-      // Use custom steps as-is (already configured for specific evaluation type)
       return customSteps;
     }
-    // Default behavior: remove Step 7 for HO evaluators
+    
+    // Default behavior: remove Step 7 for HO evaluators (but not for HO Area Managers)
     return isHO ? baseSteps.filter(step => step.id !== 7) : baseSteps;
   })();
   
@@ -949,8 +993,8 @@ export default function EvaluationForm({
                       updateDataAction: updateDataAction,
                       employee: employee,
                     };
-                    // Pass evaluationType to Step1 and Step2 (and potentially other steps that need it)
-                    if (step.id === 1 || step.id === 2) {
+                    // Pass evaluationType to Step1, Step2, and Step7 (and potentially other steps that need it)
+                    if (step.id === 1 || step.id === 2 || step.id === 7) {
                       stepProps.evaluationType = evaluationType;
                     }
                     return <StepComponent {...stepProps} />;

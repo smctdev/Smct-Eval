@@ -136,9 +136,9 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
     return false;
   };
 
-  // If evaluationType is 'rankNfile' or 'basic', it's definitely an HO evaluation
-  // Otherwise, check the evaluator's branch
-  const isHO = evaluationType === 'rankNfile' || evaluationType === 'basic' || isEvaluatorHO();
+  // Check if evaluator is HO - for branch rankNfile, evaluationType can be 'rankNfile' but evaluator is NOT HO
+  // Only treat as HO if evaluator's branch is actually HO, not based on evaluationType alone
+  const isHO = isEvaluatorHO();
   
   // Debug: Log to verify evaluationType is being passed
   // console.log('Step2 - evaluationType:', evaluationType, 'isHO:', isHO);

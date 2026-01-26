@@ -157,32 +157,65 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
     );
   };
 
+  // Check if evaluator is Area Manager
+  const isAreaManager = () => {
+    if (!user?.positions) return false;
+    
+    // Get position name from various possible fields
+    const positionName = (
+      user.positions?.label || 
+      user.positions?.name || 
+      (user as any).position ||
+      ""
+    ).toLowerCase().trim();
+    
+    // Check if position is Area Manager
+    return (
+      positionName === "area manager" ||
+      positionName.includes("area manager")
+    );
+  };
+
   // If evaluationType is 'rankNfile' or 'basic', it's definitely an HO evaluation
   // Otherwise, check the evaluator's branch
   const isHO = evaluationType === 'rankNfile' || evaluationType === 'basic' || isEvaluatorHO();
   
-  // Show Job Targets if evaluator is Branch Manager or Branch Supervisor (and not HO)
-  const showJobTargets = isBranchManagerOrSupervisor() && !isHO;
+  // Show Job Targets if evaluator is Branch Manager, Branch Supervisor, or Area Manager
+  // For Area Managers: they should see Job Targets even if from HO (since they do branch evaluations)
+  // For Branch Managers/Supervisors: only show if not HO
+  const showJobTargets = isAreaManager() || (isBranchManagerOrSupervisor() && !isHO);
   
   // Debug: Log to verify evaluationType is being passed
   // console.log('Step2 - evaluationType:', evaluationType, 'isHO:', isHO);
   
   // Calculate average score for Quality of Work
+  // Includes: qualityOfWorkScore1-4, and all job target scores if showJobTargets is true
   const calculateAverageScore = () => {
-    const scores = [
+    const baseScores = [
       data.qualityOfWorkScore1,
       data.qualityOfWorkScore2,
       data.qualityOfWorkScore3,
       data.qualityOfWorkScore4,
-      // Include score5 if Job Targets should be shown (Branch Manager/Supervisor and not HO)
-      ...(showJobTargets ? [data.qualityOfWorkScore5] : []),
-    ]
+    ];
+    
+    // Include all job target scores if Job Targets should be shown
+    const jobTargetScores = showJobTargets ? [
+      data.jobTargetMotorcyclesScore,
+      data.jobTargetAppliancesScore,
+      data.jobTargetCarsScore,
+      data.jobTargetTriWheelersScore,
+      data.jobTargetCollectionScore,
+      data.jobTargetSparepartsLubricantsScore,
+      data.jobTargetShopIncomeScore,
+    ] : [];
+    
+    const allScores = [...baseScores, ...jobTargetScores]
       .filter((score) => score && score !== 0)
       .map((score) => parseInt(String(score)));
 
-    if (scores.length === 0) return "0.00";
+    if (allScores.length === 0) return "0.00";
     return (
-      scores.reduce((sum, score) => sum + score, 0) / scores.length
+      allScores.reduce((sum, score) => sum + score, 0) / allScores.length
     ).toFixed(2);
   };
 
@@ -531,71 +564,457 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                   </td>
                 </tr>
 
-                {/* Row 5: Job Targets - Show for Branch Managers and Branch Supervisors (not HO) */}
+                {/* Job Targets Section - Multiple target types */}
                 {showJobTargets && (
-                  <tr>
-                    <td className="border border-gray-300 font-bold text-center px-4 py-3 text-sm text-black">
-                      Job Targets
-                    </td>
-                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                      Achieves targets set for their respective position (Sales /
-                      CCR / Mechanic / etc.)
-                    </td>
-                    <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                      Consistently hits monthly targets assigned to their role.
-                    </td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <ScoreDropdown
-                        value={String(data.qualityOfWorkScore5)}
-                        onValueChange={(value) =>
-                          updateDataAction({ qualityOfWorkScore5: Number(value) })
-                        }
-                        placeholder="-- Select --"
-                      />
-                    </td>
-                    <td className="border border-gray-300 px-4 py-3 text-center">
-                      <div
-                        className={`px-2 py-1 rounded-md text-sm font-bold ${
-                          data.qualityOfWorkScore5 === 5
-                            ? "bg-green-100 text-green-800"
-                            : data.qualityOfWorkScore5 === 4
-                            ? "bg-blue-100 text-blue-800"
-                            : data.qualityOfWorkScore5 === 3
-                            ? "bg-yellow-100 text-yellow-800"
-                            : data.qualityOfWorkScore5 === 2
-                            ? "bg-orange-100 text-orange-800"
-                            : data.qualityOfWorkScore5 === 1
-                            ? "bg-red-100 text-red-800"
-                            : "bg-gray-100 text-gray-500"
-                        }`}
-                      >
-                        {data.qualityOfWorkScore5 === 5
-                          ? "Outstanding"
-                          : data.qualityOfWorkScore5 === 4
-                          ? "Exceeds Expectation"
-                          : data.qualityOfWorkScore5 === 3
-                          ? "Meets Expectations"
-                          : data.qualityOfWorkScore5 === 2
-                          ? "Needs Improvement"
-                          : data.qualityOfWorkScore5 === 1
-                          ? "Unsatisfactory"
-                          : "Not Rated"}
-                      </div>
-                    </td>
-                    <td className="border border-gray-300 px-4 py-3">
-                      <textarea
-                        value={data.qualityOfWorkComments5 || ""}
-                        onChange={(e) =>
-                          updateDataAction({
-                            qualityOfWorkComments5: e.target.value,
-                          })
-                        }
-                        placeholder="Enter comments about this competency..."
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        rows={3}
-                      />
-                    </td>
-                  </tr>
+                  <>
+                    {/* Sales Targets for MOTORCYCLES */}
+                    <tr>
+                      <td className="border border-gray-300 font-bold text-center px-4 py-3 text-sm text-black">
+                        Sales Targets for MOTORCYCLES
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Achieves branch sales targets for motorcycles
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Consistently hits monthly sales targets.
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <ScoreDropdown
+                          value={String(data.jobTargetMotorcyclesScore || 0)}
+                          onValueChange={(value) =>
+                            updateDataAction({ jobTargetMotorcyclesScore: Number(value) })
+                          }
+                          placeholder="-- Select --"
+                        />
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <div
+                          className={`px-2 py-1 rounded-md text-sm font-bold ${
+                            (data.jobTargetMotorcyclesScore || 0) === 5
+                              ? "bg-green-100 text-green-800"
+                              : (data.jobTargetMotorcyclesScore || 0) === 4
+                              ? "bg-blue-100 text-blue-800"
+                              : (data.jobTargetMotorcyclesScore || 0) === 3
+                              ? "bg-yellow-100 text-yellow-800"
+                              : (data.jobTargetMotorcyclesScore || 0) === 2
+                              ? "bg-orange-100 text-orange-800"
+                              : (data.jobTargetMotorcyclesScore || 0) === 1
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          {(data.jobTargetMotorcyclesScore || 0) === 5
+                            ? "Outstanding"
+                            : (data.jobTargetMotorcyclesScore || 0) === 4
+                            ? "Exceeds Expectation"
+                            : (data.jobTargetMotorcyclesScore || 0) === 3
+                            ? "Meets Expectations"
+                            : (data.jobTargetMotorcyclesScore || 0) === 2
+                            ? "Needs Improvement"
+                            : (data.jobTargetMotorcyclesScore || 0) === 1
+                            ? "Unsatisfactory"
+                            : "Not Rated"}
+                        </div>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3">
+                        <textarea
+                          value={data.jobTargetMotorcyclesComment || ""}
+                          onChange={(e) =>
+                            updateDataAction({
+                              jobTargetMotorcyclesComment: e.target.value,
+                            })
+                          }
+                          placeholder="Enter comments..."
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                          rows={3}
+                        />
+                      </td>
+                    </tr>
+
+                    {/* Sales Targets for APPLIANCES */}
+                    <tr>
+                      <td className="border border-gray-300 font-bold text-center px-4 py-3 text-sm text-black">
+                        Sales Targets for APPLIANCES
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Achieves branch sales targets for appliances
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Consistently hits monthly sales targets.
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <ScoreDropdown
+                          value={String(data.jobTargetAppliancesScore || 0)}
+                          onValueChange={(value) =>
+                            updateDataAction({ jobTargetAppliancesScore: Number(value) })
+                          }
+                          placeholder="-- Select --"
+                        />
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <div
+                          className={`px-2 py-1 rounded-md text-sm font-bold ${
+                            (data.jobTargetAppliancesScore || 0) === 5
+                              ? "bg-green-100 text-green-800"
+                              : (data.jobTargetAppliancesScore || 0) === 4
+                              ? "bg-blue-100 text-blue-800"
+                              : (data.jobTargetAppliancesScore || 0) === 3
+                              ? "bg-yellow-100 text-yellow-800"
+                              : (data.jobTargetAppliancesScore || 0) === 2
+                              ? "bg-orange-100 text-orange-800"
+                              : (data.jobTargetAppliancesScore || 0) === 1
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          {(data.jobTargetAppliancesScore || 0) === 5
+                            ? "Outstanding"
+                            : (data.jobTargetAppliancesScore || 0) === 4
+                            ? "Exceeds Expectation"
+                            : (data.jobTargetAppliancesScore || 0) === 3
+                            ? "Meets Expectations"
+                            : (data.jobTargetAppliancesScore || 0) === 2
+                            ? "Needs Improvement"
+                            : (data.jobTargetAppliancesScore || 0) === 1
+                            ? "Unsatisfactory"
+                            : "Not Rated"}
+                        </div>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3">
+                        <textarea
+                          value={data.jobTargetAppliancesComment || ""}
+                          onChange={(e) =>
+                            updateDataAction({
+                              jobTargetAppliancesComment: e.target.value,
+                            })
+                          }
+                          placeholder="Enter comments..."
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                          rows={3}
+                        />
+                      </td>
+                    </tr>
+
+                    {/* Sales Targets for CARS */}
+                    <tr>
+                      <td className="border border-gray-300 font-bold text-center px-4 py-3 text-sm text-black">
+                        Sales Targets for CARS
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Achieves branch sales targets for cars
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Consistently hits monthly sales targets.
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <ScoreDropdown
+                          value={String(data.jobTargetCarsScore || 0)}
+                          onValueChange={(value) =>
+                            updateDataAction({ jobTargetCarsScore: Number(value) })
+                          }
+                          placeholder="-- Select --"
+                        />
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <div
+                          className={`px-2 py-1 rounded-md text-sm font-bold ${
+                            (data.jobTargetCarsScore || 0) === 5
+                              ? "bg-green-100 text-green-800"
+                              : (data.jobTargetCarsScore || 0) === 4
+                              ? "bg-blue-100 text-blue-800"
+                              : (data.jobTargetCarsScore || 0) === 3
+                              ? "bg-yellow-100 text-yellow-800"
+                              : (data.jobTargetCarsScore || 0) === 2
+                              ? "bg-orange-100 text-orange-800"
+                              : (data.jobTargetCarsScore || 0) === 1
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          {(data.jobTargetCarsScore || 0) === 5
+                            ? "Outstanding"
+                            : (data.jobTargetCarsScore || 0) === 4
+                            ? "Exceeds Expectation"
+                            : (data.jobTargetCarsScore || 0) === 3
+                            ? "Meets Expectations"
+                            : (data.jobTargetCarsScore || 0) === 2
+                            ? "Needs Improvement"
+                            : (data.jobTargetCarsScore || 0) === 1
+                            ? "Unsatisfactory"
+                            : "Not Rated"}
+                        </div>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3">
+                        <textarea
+                          value={data.jobTargetCarsComment || ""}
+                          onChange={(e) =>
+                            updateDataAction({
+                              jobTargetCarsComment: e.target.value,
+                            })
+                          }
+                          placeholder="Enter comments..."
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                          rows={3}
+                        />
+                      </td>
+                    </tr>
+
+                    {/* Sales Targets for TRI-WHEELERS (for 3S Shops only) */}
+                    <tr>
+                      <td className="border border-gray-300 font-bold text-center px-4 py-3 text-sm text-black">
+                        Sales Targets for TRI-WHEELERS (for 3S Shops only)
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Achieves branch sales targets for tri-wheelers
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Consistently hits monthly sales targets.
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <ScoreDropdown
+                          value={String(data.jobTargetTriWheelersScore || 0)}
+                          onValueChange={(value) =>
+                            updateDataAction({ jobTargetTriWheelersScore: Number(value) })
+                          }
+                          placeholder="-- Select --"
+                        />
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <div
+                          className={`px-2 py-1 rounded-md text-sm font-bold ${
+                            (data.jobTargetTriWheelersScore || 0) === 5
+                              ? "bg-green-100 text-green-800"
+                              : (data.jobTargetTriWheelersScore || 0) === 4
+                              ? "bg-blue-100 text-blue-800"
+                              : (data.jobTargetTriWheelersScore || 0) === 3
+                              ? "bg-yellow-100 text-yellow-800"
+                              : (data.jobTargetTriWheelersScore || 0) === 2
+                              ? "bg-orange-100 text-orange-800"
+                              : (data.jobTargetTriWheelersScore || 0) === 1
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          {(data.jobTargetTriWheelersScore || 0) === 5
+                            ? "Outstanding"
+                            : (data.jobTargetTriWheelersScore || 0) === 4
+                            ? "Exceeds Expectation"
+                            : (data.jobTargetTriWheelersScore || 0) === 3
+                            ? "Meets Expectations"
+                            : (data.jobTargetTriWheelersScore || 0) === 2
+                            ? "Needs Improvement"
+                            : (data.jobTargetTriWheelersScore || 0) === 1
+                            ? "Unsatisfactory"
+                            : "Not Rated"}
+                        </div>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3">
+                        <textarea
+                          value={data.jobTargetTriWheelersComment || ""}
+                          onChange={(e) =>
+                            updateDataAction({
+                              jobTargetTriWheelersComment: e.target.value,
+                            })
+                          }
+                          placeholder="Enter comments..."
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                          rows={3}
+                        />
+                      </td>
+                    </tr>
+
+                    {/* Collection Targets */}
+                    <tr>
+                      <td className="border border-gray-300 font-bold text-center px-4 py-3 text-sm text-black">
+                        Collection Targets
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Achieves branch collection targets
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Consistently hits monthly collection targets.
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <ScoreDropdown
+                          value={String(data.jobTargetCollectionScore || 0)}
+                          onValueChange={(value) =>
+                            updateDataAction({ jobTargetCollectionScore: Number(value) })
+                          }
+                          placeholder="-- Select --"
+                        />
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <div
+                          className={`px-2 py-1 rounded-md text-sm font-bold ${
+                            (data.jobTargetCollectionScore || 0) === 5
+                              ? "bg-green-100 text-green-800"
+                              : (data.jobTargetCollectionScore || 0) === 4
+                              ? "bg-blue-100 text-blue-800"
+                              : (data.jobTargetCollectionScore || 0) === 3
+                              ? "bg-yellow-100 text-yellow-800"
+                              : (data.jobTargetCollectionScore || 0) === 2
+                              ? "bg-orange-100 text-orange-800"
+                              : (data.jobTargetCollectionScore || 0) === 1
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          {(data.jobTargetCollectionScore || 0) === 5
+                            ? "Outstanding"
+                            : (data.jobTargetCollectionScore || 0) === 4
+                            ? "Exceeds Expectation"
+                            : (data.jobTargetCollectionScore || 0) === 3
+                            ? "Meets Expectations"
+                            : (data.jobTargetCollectionScore || 0) === 2
+                            ? "Needs Improvement"
+                            : (data.jobTargetCollectionScore || 0) === 1
+                            ? "Unsatisfactory"
+                            : "Not Rated"}
+                        </div>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3">
+                        <textarea
+                          value={data.jobTargetCollectionComment || ""}
+                          onChange={(e) =>
+                            updateDataAction({
+                              jobTargetCollectionComment: e.target.value,
+                            })
+                          }
+                          placeholder="Enter comments..."
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                          rows={3}
+                        />
+                      </td>
+                    </tr>
+
+                    {/* Spareparts & Lubricants Targets */}
+                    <tr>
+                      <td className="border border-gray-300 font-bold text-center px-4 py-3 text-sm text-black">
+                        Spareparts & Lubricants Targets
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Achieves branch spareparts and lubricants targets
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Consistently hits monthly spareparts and lubricants targets.
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <ScoreDropdown
+                          value={String(data.jobTargetSparepartsLubricantsScore || 0)}
+                          onValueChange={(value) =>
+                            updateDataAction({ jobTargetSparepartsLubricantsScore: Number(value) })
+                          }
+                          placeholder="-- Select --"
+                        />
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <div
+                          className={`px-2 py-1 rounded-md text-sm font-bold ${
+                            (data.jobTargetSparepartsLubricantsScore || 0) === 5
+                              ? "bg-green-100 text-green-800"
+                              : (data.jobTargetSparepartsLubricantsScore || 0) === 4
+                              ? "bg-blue-100 text-blue-800"
+                              : (data.jobTargetSparepartsLubricantsScore || 0) === 3
+                              ? "bg-yellow-100 text-yellow-800"
+                              : (data.jobTargetSparepartsLubricantsScore || 0) === 2
+                              ? "bg-orange-100 text-orange-800"
+                              : (data.jobTargetSparepartsLubricantsScore || 0) === 1
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          {(data.jobTargetSparepartsLubricantsScore || 0) === 5
+                            ? "Outstanding"
+                            : (data.jobTargetSparepartsLubricantsScore || 0) === 4
+                            ? "Exceeds Expectation"
+                            : (data.jobTargetSparepartsLubricantsScore || 0) === 3
+                            ? "Meets Expectations"
+                            : (data.jobTargetSparepartsLubricantsScore || 0) === 2
+                            ? "Needs Improvement"
+                            : (data.jobTargetSparepartsLubricantsScore || 0) === 1
+                            ? "Unsatisfactory"
+                            : "Not Rated"}
+                        </div>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3">
+                        <textarea
+                          value={data.jobTargetSparepartsLubricantsComment || ""}
+                          onChange={(e) =>
+                            updateDataAction({
+                              jobTargetSparepartsLubricantsComment: e.target.value,
+                            })
+                          }
+                          placeholder="Enter comments..."
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                          rows={3}
+                        />
+                      </td>
+                    </tr>
+
+                    {/* Shop Income Targets */}
+                    <tr>
+                      <td className="border border-gray-300 font-bold text-center px-4 py-3 text-sm text-black">
+                        Shop Income Targets
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Achieves branch shop income targets
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                        Consistently hits monthly shop income targets.
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <ScoreDropdown
+                          value={String(data.jobTargetShopIncomeScore || 0)}
+                          onValueChange={(value) =>
+                            updateDataAction({ jobTargetShopIncomeScore: Number(value) })
+                          }
+                          placeholder="-- Select --"
+                        />
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3 text-center">
+                        <div
+                          className={`px-2 py-1 rounded-md text-sm font-bold ${
+                            (data.jobTargetShopIncomeScore || 0) === 5
+                              ? "bg-green-100 text-green-800"
+                              : (data.jobTargetShopIncomeScore || 0) === 4
+                              ? "bg-blue-100 text-blue-800"
+                              : (data.jobTargetShopIncomeScore || 0) === 3
+                              ? "bg-yellow-100 text-yellow-800"
+                              : (data.jobTargetShopIncomeScore || 0) === 2
+                              ? "bg-orange-100 text-orange-800"
+                              : (data.jobTargetShopIncomeScore || 0) === 1
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          {(data.jobTargetShopIncomeScore || 0) === 5
+                            ? "Outstanding"
+                            : (data.jobTargetShopIncomeScore || 0) === 4
+                            ? "Exceeds Expectation"
+                            : (data.jobTargetShopIncomeScore || 0) === 3
+                            ? "Meets Expectations"
+                            : (data.jobTargetShopIncomeScore || 0) === 2
+                            ? "Needs Improvement"
+                            : (data.jobTargetShopIncomeScore || 0) === 1
+                            ? "Unsatisfactory"
+                            : "Not Rated"}
+                        </div>
+                      </td>
+                      <td className="border border-gray-300 px-4 py-3">
+                        <textarea
+                          value={data.jobTargetShopIncomeComment || ""}
+                          onChange={(e) =>
+                            updateDataAction({
+                              jobTargetShopIncomeComment: e.target.value,
+                            })
+                          }
+                          placeholder="Enter comments..."
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                          rows={3}
+                        />
+                      </td>
+                    </tr>
+                  </>
                 )}
               </tbody>
             </table>
@@ -651,12 +1070,50 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                     </span>
                   </div>
                   {showJobTargets && (
-                    <div>
-                      Job Targets:{" "}
-                      <span className="font-semibold">
-                        {data.qualityOfWorkScore5 || "Not rated"}
-                      </span>
-                    </div>
+                    <>
+                      <div>
+                        Sales Targets for MOTORCYCLES:{" "}
+                        <span className="font-semibold">
+                          {data.jobTargetMotorcyclesScore || "Not rated"}
+                        </span>
+                      </div>
+                      <div>
+                        Sales Targets for APPLIANCES:{" "}
+                        <span className="font-semibold">
+                          {data.jobTargetAppliancesScore || "Not rated"}
+                        </span>
+                      </div>
+                      <div>
+                        Sales Targets for CARS:{" "}
+                        <span className="font-semibold">
+                          {data.jobTargetCarsScore || "Not rated"}
+                        </span>
+                      </div>
+                      <div>
+                        Sales Targets for TRI-WHEELERS:{" "}
+                        <span className="font-semibold">
+                          {data.jobTargetTriWheelersScore || "Not rated"}
+                        </span>
+                      </div>
+                      <div>
+                        Collection Targets:{" "}
+                        <span className="font-semibold">
+                          {data.jobTargetCollectionScore || "Not rated"}
+                        </span>
+                      </div>
+                      <div>
+                        Spareparts & Lubricants Targets:{" "}
+                        <span className="font-semibold">
+                          {data.jobTargetSparepartsLubricantsScore || "Not rated"}
+                        </span>
+                      </div>
+                      <div>
+                        Shop Income Targets:{" "}
+                        <span className="font-semibold">
+                          {data.jobTargetShopIncomeScore || "Not rated"}
+                        </span>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
@@ -669,10 +1126,18 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                   data.qualityOfWorkScore2,
                   data.qualityOfWorkScore3,
                   data.qualityOfWorkScore4,
-                  ...(showJobTargets ? [data.qualityOfWorkScore5] : []),
+                  ...(showJobTargets ? [
+                    data.jobTargetMotorcyclesScore,
+                    data.jobTargetAppliancesScore,
+                    data.jobTargetCarsScore,
+                    data.jobTargetTriWheelersScore,
+                    data.jobTargetCollectionScore,
+                    data.jobTargetSparepartsLubricantsScore,
+                    data.jobTargetShopIncomeScore,
+                  ] : []),
                 ].filter((score) => score && score !== 0).length
               }{" "}
-              of {showJobTargets ? 5 : 4} criteria
+              of {showJobTargets ? 11 : 4} criteria
             </div>
           </div>
         </CardContent>
