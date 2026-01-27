@@ -190,6 +190,23 @@ export default function EvaluationForm({
     qualityOfWorkScore9: 0, // Branch Manager only
     qualityOfWorkScore10: 0, // Branch Manager only
     qualityOfWorkScore11: 0, // Branch Manager only
+    qualityOfWorkScore12: 0, // Branch Manager only - Shop Income Targets
+    // Job Target scores (7 detailed job targets from newStep2)
+    jobTargetMotorcyclesScore: 0,
+    jobTargetAppliancesScore: 0,
+    jobTargetCarsScore: 0,
+    jobTargetTriWheelersScore: 0,
+    jobTargetCollectionScore: 0,
+    jobTargetSparepartsLubricantsScore: 0,
+    jobTargetShopIncomeScore: 0,
+    // Job Target comments
+    jobTargetMotorcyclesComment: "",
+    jobTargetAppliancesComment: "",
+    jobTargetCarsComment: "",
+    jobTargetTriWheelersComment: "",
+    jobTargetCollectionComment: "",
+    jobTargetSparepartsLubricantsComment: "",
+    jobTargetShopIncomeComment: "",
     qualityOfWorkComments1: "",
     qualityOfWorkComments2: "",
     qualityOfWorkComments3: "",
@@ -201,6 +218,7 @@ export default function EvaluationForm({
     qualityOfWorkComments9: "", // Branch Manager only
     qualityOfWorkComments10: "", // Branch Manager only
     qualityOfWorkComments11: "", // Branch Manager only
+    qualityOfWorkComments12: "", // Branch Manager only - Shop Income Targets
     adaptabilityScore1: 0,
     adaptabilityScore2: 0,
     adaptabilityScore3: 0,
@@ -407,9 +425,43 @@ export default function EvaluationForm({
           return false;
         };
         
-        const isHO = isEvaluatorHO();
+        const isEvaluatorAreaManager = () => {
+          if (!user?.positions) return false;
+          const position = user.positions;
+          const positionLabel = typeof position === 'string' 
+            ? position.toUpperCase() 
+            : (position as any)?.label?.toUpperCase() || '';
+          return positionLabel === 'AREA MANAGER' || positionLabel.includes('AREA MANAGER');
+        };
         
-        return (
+        const isBranchManagerOrSupervisor = () => {
+          if (!user?.positions) return false;
+          const position = user.positions;
+          const positionLabel = typeof position === 'string' 
+            ? position.toUpperCase() 
+            : (position as any)?.label?.toUpperCase() || '';
+          return (
+            positionLabel === 'BRANCH MANAGER' || 
+            positionLabel.includes('BRANCH MANAGER') ||
+            positionLabel === 'BRANCH SUPERVISOR' || 
+            positionLabel.includes('BRANCH SUPERVISOR')
+          );
+        };
+        
+        const isHO = isEvaluatorHO();
+        const isAreaMgr = isEvaluatorAreaManager();
+        const isBranchMgrOrSup = isBranchManagerOrSupervisor();
+        
+        // Determine if job targets should be shown (same logic as newStep2.tsx)
+        // For BranchRankNfile, showJobTargets is false (uses Step2, not newStep2)
+        const showJobTargets = isAreaMgr || (isBranchMgrOrSup && !isHO);
+        
+        // Check if this is a BranchRankNfile evaluation (uses Step2, not newStep2)
+        // BranchRankNfile: evaluationType === 'rankNfile' && !isHO
+        const isBranchRankNfile = !isHO && evaluationType === 'rankNfile';
+        
+        // Base Quality of Work scores (always required)
+        const hasBaseScores = (
           form.qualityOfWorkScore1 &&
           form.qualityOfWorkScore1 !== 0 &&
           form.qualityOfWorkScore2 &&
@@ -417,10 +469,41 @@ export default function EvaluationForm({
           form.qualityOfWorkScore3 &&
           form.qualityOfWorkScore3 !== 0 &&
           form.qualityOfWorkScore4 &&
-          form.qualityOfWorkScore4 !== 0 &&
-          // qualityOfWorkScore5 is only required if not HO
-          (isHO || (form.qualityOfWorkScore5 && form.qualityOfWorkScore5 !== 0))
+          form.qualityOfWorkScore4 !== 0
         );
+        
+        // Job Target scores (required only if showJobTargets is true)
+        // For BranchRankNfile, showJobTargets is false, so we don't require the 7 detailed job target scores
+        const hasJobTargetScores = showJobTargets ? (
+          form.jobTargetMotorcyclesScore &&
+          form.jobTargetMotorcyclesScore !== 0 &&
+          form.jobTargetAppliancesScore &&
+          form.jobTargetAppliancesScore !== 0 &&
+          form.jobTargetCarsScore &&
+          form.jobTargetCarsScore !== 0 &&
+          form.jobTargetTriWheelersScore &&
+          form.jobTargetTriWheelersScore !== 0 &&
+          form.jobTargetCollectionScore &&
+          form.jobTargetCollectionScore !== 0 &&
+          form.jobTargetSparepartsLubricantsScore &&
+          form.jobTargetSparepartsLubricantsScore !== 0 &&
+          form.jobTargetShopIncomeScore &&
+          form.jobTargetShopIncomeScore !== 0
+        ) : true; // If job targets shouldn't be shown, don't require them
+        
+        // qualityOfWorkScore5 (single "Job Targets" row) is required if:
+        // 1. Evaluator is HO (always skip - HO doesn't see this)
+        // 2. OR showJobTargets is true (skip - they use the 7 detailed job targets instead)
+        // 3. OR for BranchRankNfile (not HO, rankNfile type) - REQUIRED (uses Step2 which shows qualityOfWorkScore5)
+        // 4. OR for any non-HO evaluator not using the 7 detailed job targets - REQUIRED
+        const hasQualityOfWorkScore5 = isHO || showJobTargets || (form.qualityOfWorkScore5 && form.qualityOfWorkScore5 !== 0);
+        
+        // For BranchRankNfile specifically, ensure qualityOfWorkScore5 is filled
+        if (isBranchRankNfile && (!form.qualityOfWorkScore5 || form.qualityOfWorkScore5 === 0)) {
+          return false; // Explicitly require qualityOfWorkScore5 for BranchRankNfile
+        }
+        
+        return hasBaseScores && hasJobTargetScores && hasQualityOfWorkScore5;
       case 3: // Adaptability
         return (
           form.adaptabilityScore1 &&
@@ -520,8 +603,33 @@ export default function EvaluationForm({
           form.customerServiceScore5 &&
           form.customerServiceScore5 !== 0
         );
-      case 8: // Overall Assessment
-        return true; // No validation required for step 8
+      case 8: // Could be Managerial Skills or Overall Assessment depending on evaluation type
+        // Check the actual step ID to determine what step 8 is
+        const currentStepId = getCurrentStepId();
+        const currentStepConfig = filteredSteps[currentStep - 1];
+        
+        // If step 8 is Managerial Skills (id: 8), validate all managerial skills scores
+        if (currentStepId === 8 && currentStepConfig?.title === "Managerial Skills") {
+          return (
+            form.managerialSkillsScore1 &&
+            form.managerialSkillsScore1 !== 0 &&
+            form.managerialSkillsScore2 &&
+            form.managerialSkillsScore2 !== 0 &&
+            form.managerialSkillsScore3 &&
+            form.managerialSkillsScore3 !== 0 &&
+            form.managerialSkillsScore4 &&
+            form.managerialSkillsScore4 !== 0 &&
+            form.managerialSkillsScore5 &&
+            form.managerialSkillsScore5 !== 0 &&
+            form.managerialSkillsScore6 &&
+            form.managerialSkillsScore6 !== 0
+          );
+        }
+        
+        // If step 8 is Overall Assessment or any other step, no validation required
+        return true;
+      case 9: // Overall Assessment (for branch evaluations where Managerial Skills is step 8)
+        return true; // No validation required for Overall Assessment
       default:
         return true; // For other steps, allow progression
     }
@@ -529,6 +637,15 @@ export default function EvaluationForm({
 
   // Get step name for tooltip
   const getStepName = () => {
+    // Get the actual step configuration to determine the correct name
+    if (currentStep > 0 && currentStep <= filteredSteps.length) {
+      const stepConfig = filteredSteps[currentStep - 1];
+      if (stepConfig?.title) {
+        return stepConfig.title;
+      }
+    }
+    
+    // Fallback to default names if step config is not available
     switch (currentStep) {
       case 1:
         return "Employee Information & Job Knowledge";
@@ -545,6 +662,8 @@ export default function EvaluationForm({
       case 7:
         return "Customer Service";
       case 8:
+        return "Managerial Skills";
+      case 9:
         return "Overall Assessment";
       default:
         return "evaluation";
@@ -732,6 +851,13 @@ export default function EvaluationForm({
         const isHO = isEvaluatorHO();
         const isAreaMgr = isAreaManager();
         
+        // Debug: Verify Shop Income (Q12) is being sent to backend
+        if (form.qualityOfWorkScore12 !== undefined && form.qualityOfWorkScore12 !== 0) {
+          console.log('✅ Frontend: qualityOfWorkScore12 is being sent to backend:', form.qualityOfWorkScore12);
+        } else {
+          console.warn('⚠️ Frontend: qualityOfWorkScore12 is missing or zero');
+        }
+        
         // Use appropriate API endpoint based on branch, position, and evaluation type
         if (isHO && isAreaMgr) {
           // Head Office Area Manager - use Branch endpoints
@@ -874,7 +1000,7 @@ export default function EvaluationForm({
       `}</style>
       <div className="max-h-[95vh] bg-gradient-to-br from-blue-50 to-indigo-100 p-6 overflow-y-auto">
         <div className="w-full mx-auto px-4">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             {/* Step Numbers Indicator */}
             {currentStep > 0 && (
               <Card className="mb-6">
@@ -1155,6 +1281,23 @@ export default function EvaluationForm({
                     qualityOfWorkScore9: 0,
                     qualityOfWorkScore10: 0,
                     qualityOfWorkScore11: 0,
+                    qualityOfWorkScore12: 0,
+                    // Job Target scores (7 detailed job targets from newStep2)
+                    jobTargetMotorcyclesScore: 0,
+                    jobTargetAppliancesScore: 0,
+                    jobTargetCarsScore: 0,
+                    jobTargetTriWheelersScore: 0,
+                    jobTargetCollectionScore: 0,
+                    jobTargetSparepartsLubricantsScore: 0,
+                    jobTargetShopIncomeScore: 0,
+                    // Job Target comments
+                    jobTargetMotorcyclesComment: "",
+                    jobTargetAppliancesComment: "",
+                    jobTargetCarsComment: "",
+                    jobTargetTriWheelersComment: "",
+                    jobTargetCollectionComment: "",
+                    jobTargetSparepartsLubricantsComment: "",
+                    jobTargetShopIncomeComment: "",
                     qualityOfWorkComments1: "",
                     qualityOfWorkComments2: "",
                     qualityOfWorkComments3: "",
@@ -1166,6 +1309,7 @@ export default function EvaluationForm({
                     qualityOfWorkComments9: "",
                     qualityOfWorkComments10: "",
                     qualityOfWorkComments11: "",
+                    qualityOfWorkComments12: "",
                     adaptabilityScore1: 0,
                     adaptabilityScore2: 0,
                     adaptabilityScore3: 0,

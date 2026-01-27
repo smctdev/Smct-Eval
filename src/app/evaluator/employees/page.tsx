@@ -27,7 +27,6 @@ import apiService from "@/lib/apiService";
 import EvaluationTypeModal from "@/components/EvaluationTypeModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import EvaluationForm from "@/components/evaluation";
-import ManagerEvaluationForm from "@/components/evaluation/ManagerEvaluationForm";
 import BranchEvaluationForm from "@/components/evaluation/BranchEvaluationForm";
 import RankNfileHo from "@/components/evaluation/RankNfileHo";
 import BasicHo from "@/components/evaluation/BasicHo";

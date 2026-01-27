@@ -51,6 +51,7 @@ interface EvaluationPayload {
   qualityOfWorkScore9?: number; // Branch Manager only
   qualityOfWorkScore10?: number; // Branch Manager only
   qualityOfWorkScore11?: number; // Branch Manager only
+  qualityOfWorkScore12?: number; // Branch Manager only - Shop Income Targets
   qualityOfWorkComments1: string;
   qualityOfWorkComments2: string;
   qualityOfWorkComments3: string;
@@ -62,6 +63,7 @@ interface EvaluationPayload {
   qualityOfWorkComments9?: string; // Branch Manager only
   qualityOfWorkComments10?: string; // Branch Manager only
   qualityOfWorkComments11?: string; // Branch Manager only
+  qualityOfWorkComments12?: string; // Branch Manager only - Shop Income Targets
   adaptabilityScore1: number;
   adaptabilityScore2: number;
   adaptabilityScore3: number;

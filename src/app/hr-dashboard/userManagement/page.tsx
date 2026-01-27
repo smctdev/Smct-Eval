@@ -49,7 +49,6 @@ import { User, useAuth } from "@/contexts/UserContext";
 import { Combobox } from "@/components/ui/combobox";
 import EvaluationForm from "@/components/evaluation";
 import EvaluationTypeModal from "@/components/EvaluationTypeModal";
-import ManagerEvaluationForm from "@/components/evaluation/ManagerEvaluationForm";
 import BranchEvaluationForm from "@/components/evaluation/BranchEvaluationForm";
 import RankNfileHo from "@/components/evaluation/RankNfileHo";
 import BasicHo from "@/components/evaluation/BasicHo";

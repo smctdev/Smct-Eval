@@ -211,6 +211,7 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                   qualityOfWorkScore3: 0,
                   qualityOfWorkScore4: 0,
                   qualityOfWorkScore5: 0,
+                  qualityOfWorkScore6: 0,
                 });
               }}
               className="text-xs px-3 py-1 h-7 bg-blue-500 text-white border-gray-300 hover:text-white hover:bg-blue-700 cursor-pointer hover:scale-110 transition-transform duration-200 "

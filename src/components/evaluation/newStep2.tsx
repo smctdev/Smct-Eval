@@ -263,11 +263,44 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
               size="sm"
               onClick={() => {
                 updateDataAction({
+                  // Base Quality of Work scores
                   qualityOfWorkScore1: 0,
                   qualityOfWorkScore2: 0,
                   qualityOfWorkScore3: 0,
                   qualityOfWorkScore4: 0,
                   qualityOfWorkScore5: 0,
+                  // Job Target scores (qualityOfWorkScore6-12 for backend mapping)
+                  
+                  // Job Target specific scores (what the form inputs are bound to)
+                  jobTargetMotorcyclesScore: 0,
+                  jobTargetAppliancesScore: 0,
+                  jobTargetCarsScore: 0,
+                  jobTargetTriWheelersScore: 0,
+                  jobTargetCollectionScore: 0,
+                  jobTargetSparepartsLubricantsScore: 0,
+                  jobTargetShopIncomeScore: 0,
+                  // Base Quality of Work comments
+                  qualityOfWorkComments1: "",
+                  qualityOfWorkComments2: "",
+                  qualityOfWorkComments3: "",
+                  qualityOfWorkComments4: "",
+                  qualityOfWorkComments5: "",
+                  // Job Target comments (qualityOfWorkComments6-12 for backend mapping)
+                  qualityOfWorkComments6: "",
+                  qualityOfWorkComments7: "",
+                  qualityOfWorkComments8: "",
+                  qualityOfWorkComments9: "",
+                  qualityOfWorkComments10: "",
+                  qualityOfWorkComments11: "",
+                  qualityOfWorkComments12: "",
+                  // Job Target specific comments (what the form inputs are bound to)
+                  jobTargetMotorcyclesComment: "",
+                  jobTargetAppliancesComment: "",
+                  jobTargetCarsComment: "",
+                  jobTargetTriWheelersComment: "",
+                  jobTargetCollectionComment: "",
+                  jobTargetSparepartsLubricantsComment: "",
+                  jobTargetShopIncomeComment: "",
                 });
               }}
               className="text-xs px-3 py-1 h-7 bg-blue-500 text-white border-gray-300 hover:text-white hover:bg-blue-700 cursor-pointer hover:scale-110 transition-transform duration-200 "
@@ -581,9 +614,13 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                       <td className="border border-gray-300 px-4 py-3 text-center">
                         <ScoreDropdown
                           value={String(data.jobTargetMotorcyclesScore || 0)}
-                          onValueChange={(value) =>
-                            updateDataAction({ jobTargetMotorcyclesScore: Number(value) })
-                          }
+                          onValueChange={(value) => {
+                            const scoreValue = Number(value);
+                            updateDataAction({ 
+                              jobTargetMotorcyclesScore: scoreValue,
+                              qualityOfWorkScore6: scoreValue // Also update qualityOfWorkScore6 for backend mapping
+                            });
+                          }}
                           placeholder="-- Select --"
                         />
                       </td>
@@ -622,6 +659,7 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                           onChange={(e) =>
                             updateDataAction({
                               jobTargetMotorcyclesComment: e.target.value,
+                              qualityOfWorkComments6: e.target.value, // Also update for backend mapping
                             })
                           }
                           placeholder="Enter comments..."
@@ -645,9 +683,13 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                       <td className="border border-gray-300 px-4 py-3 text-center">
                         <ScoreDropdown
                           value={String(data.jobTargetAppliancesScore || 0)}
-                          onValueChange={(value) =>
-                            updateDataAction({ jobTargetAppliancesScore: Number(value) })
-                          }
+                          onValueChange={(value) => {
+                            const scoreValue = Number(value);
+                            updateDataAction({ 
+                              jobTargetAppliancesScore: scoreValue,
+                              qualityOfWorkScore7: scoreValue // Also update qualityOfWorkScore7 for backend mapping
+                            });
+                          }}
                           placeholder="-- Select --"
                         />
                       </td>
@@ -686,6 +728,7 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                           onChange={(e) =>
                             updateDataAction({
                               jobTargetAppliancesComment: e.target.value,
+                              qualityOfWorkComments7: e.target.value, // Also update for backend mapping
                             })
                           }
                           placeholder="Enter comments..."
@@ -709,9 +752,13 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                       <td className="border border-gray-300 px-4 py-3 text-center">
                         <ScoreDropdown
                           value={String(data.jobTargetCarsScore || 0)}
-                          onValueChange={(value) =>
-                            updateDataAction({ jobTargetCarsScore: Number(value) })
-                          }
+                          onValueChange={(value) => {
+                            const scoreValue = Number(value);
+                            updateDataAction({ 
+                              jobTargetCarsScore: scoreValue,
+                              qualityOfWorkScore8: scoreValue // Also update qualityOfWorkScore8 for backend mapping
+                            });
+                          }}
                           placeholder="-- Select --"
                         />
                       </td>
@@ -750,6 +797,7 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                           onChange={(e) =>
                             updateDataAction({
                               jobTargetCarsComment: e.target.value,
+                              qualityOfWorkComments8: e.target.value, // Also update for backend mapping
                             })
                           }
                           placeholder="Enter comments..."
@@ -773,9 +821,13 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                       <td className="border border-gray-300 px-4 py-3 text-center">
                         <ScoreDropdown
                           value={String(data.jobTargetTriWheelersScore || 0)}
-                          onValueChange={(value) =>
-                            updateDataAction({ jobTargetTriWheelersScore: Number(value) })
-                          }
+                          onValueChange={(value) => {
+                            const scoreValue = Number(value);
+                            updateDataAction({ 
+                              jobTargetTriWheelersScore: scoreValue,
+                              qualityOfWorkScore9: scoreValue // Also update qualityOfWorkScore9 for backend mapping
+                            });
+                          }}
                           placeholder="-- Select --"
                         />
                       </td>
@@ -814,6 +866,7 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                           onChange={(e) =>
                             updateDataAction({
                               jobTargetTriWheelersComment: e.target.value,
+                              qualityOfWorkComments9: e.target.value, // Also update for backend mapping
                             })
                           }
                           placeholder="Enter comments..."
@@ -837,9 +890,13 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                       <td className="border border-gray-300 px-4 py-3 text-center">
                         <ScoreDropdown
                           value={String(data.jobTargetCollectionScore || 0)}
-                          onValueChange={(value) =>
-                            updateDataAction({ jobTargetCollectionScore: Number(value) })
-                          }
+                          onValueChange={(value) => {
+                            const scoreValue = Number(value);
+                            updateDataAction({ 
+                              jobTargetCollectionScore: scoreValue,
+                              qualityOfWorkScore10: scoreValue // Also update qualityOfWorkScore10 for backend mapping
+                            });
+                          }}
                           placeholder="-- Select --"
                         />
                       </td>
@@ -878,6 +935,7 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                           onChange={(e) =>
                             updateDataAction({
                               jobTargetCollectionComment: e.target.value,
+                              qualityOfWorkComments10: e.target.value, // Also update for backend mapping
                             })
                           }
                           placeholder="Enter comments..."
@@ -901,9 +959,13 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                       <td className="border border-gray-300 px-4 py-3 text-center">
                         <ScoreDropdown
                           value={String(data.jobTargetSparepartsLubricantsScore || 0)}
-                          onValueChange={(value) =>
-                            updateDataAction({ jobTargetSparepartsLubricantsScore: Number(value) })
-                          }
+                          onValueChange={(value) => {
+                            const scoreValue = Number(value);
+                            updateDataAction({ 
+                              jobTargetSparepartsLubricantsScore: scoreValue,
+                              qualityOfWorkScore11: scoreValue // Also update qualityOfWorkScore11 for backend mapping
+                            });
+                          }}
                           placeholder="-- Select --"
                         />
                       </td>
@@ -942,6 +1004,7 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                           onChange={(e) =>
                             updateDataAction({
                               jobTargetSparepartsLubricantsComment: e.target.value,
+                              qualityOfWorkComments11: e.target.value, // Also update for backend mapping
                             })
                           }
                           placeholder="Enter comments..."
@@ -965,9 +1028,13 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                       <td className="border border-gray-300 px-4 py-3 text-center">
                         <ScoreDropdown
                           value={String(data.jobTargetShopIncomeScore || 0)}
-                          onValueChange={(value) =>
-                            updateDataAction({ jobTargetShopIncomeScore: Number(value) })
-                          }
+                          onValueChange={(value) => {
+                            const scoreValue = Number(value);
+                            updateDataAction({ 
+                              jobTargetShopIncomeScore: scoreValue,
+                              qualityOfWorkScore12: scoreValue // Also update qualityOfWorkScore12 for backend mapping
+                            });
+                          }}
                           placeholder="-- Select --"
                         />
                       </td>
@@ -1006,6 +1073,7 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
                           onChange={(e) =>
                             updateDataAction({
                               jobTargetShopIncomeComment: e.target.value,
+                              qualityOfWorkComments12: e.target.value, // Also update for backend mapping
                             })
                           }
                           placeholder="Enter comments..."
