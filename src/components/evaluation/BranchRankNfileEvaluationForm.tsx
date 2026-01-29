@@ -18,7 +18,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { AlertTriangle } from "lucide-react";
-import WelcomeStep from "./WelcomeStep";
+import WelcomeStepBranch from "./WelcomeStepBranch";
 import { EvaluationPayload } from "./types";
 import { storeEvaluationResult } from "@/lib/evaluationStorage";
 import { apiService } from "@/lib/apiService";
@@ -460,9 +460,9 @@ export default function BranchRankNfileEvaluationForm({
 
   // Get the current step component for rendering
   const getCurrentStepComponent = () => {
-    if (currentStep === 0) return WelcomeStep;
+    if (currentStep === 0) return WelcomeStepBranch;
     const stepIndex = currentStep - 1;
-    return filteredSteps[stepIndex]?.component || WelcomeStep;
+    return filteredSteps[stepIndex]?.component || WelcomeStepBranch;
   };
 
   return (
@@ -534,7 +534,7 @@ export default function BranchRankNfileEvaluationForm({
               )}
               <CardContent>
                 {currentStep === 0 ? (
-                  <WelcomeStep
+                  <WelcomeStepBranch
                     data={form}
                     updateDataAction={updateDataAction}
                     employee={employee}

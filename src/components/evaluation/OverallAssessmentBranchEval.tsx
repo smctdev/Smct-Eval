@@ -921,7 +921,7 @@ export default function OverallAssessmentBranchEval({
             <table className="w-full border-collapse border border-gray-300">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
+                  <th className="border border-gray-300 px-4 py-3 text-left font-bold text-black">
                     Behavioral Indicators
                   </th>
                   <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
@@ -1102,7 +1102,7 @@ export default function OverallAssessmentBranchEval({
             <table className="w-full border-collapse border border-gray-300">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
+                  <th className="border border-gray-300 px-4 py-3 text-left font-bold text-black">
                     Behavioral Indicators
                   </th>
                   <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
@@ -1632,7 +1632,7 @@ export default function OverallAssessmentBranchEval({
             <table className="w-full border-collapse border border-gray-300">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
+                  <th className="border border-gray-300 px-4 py-3 text-left font-bold text-black">
                     Behavioral Indicators
                   </th>
                   <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
@@ -1808,7 +1808,7 @@ export default function OverallAssessmentBranchEval({
             <table className="w-full border-collapse border border-gray-300">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
+                  <th className="border border-gray-300 px-4 py-3 text-left font-bold text-black">
                     Behavioral Indicators
                   </th>
                   <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
@@ -1830,7 +1830,7 @@ export default function OverallAssessmentBranchEval({
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
                     Active Participation in Team Activities
                   </td>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                  <td className="border border-gray-300  px-4 py-3 text-sm text-gray-700">
                     Actively participates in team meetings and projects.
                     Contributes ideas and feedback during discussions. Engages
                     in team tasks to achieve group goals.
@@ -1989,7 +1989,7 @@ export default function OverallAssessmentBranchEval({
             <table className="w-full border-collapse border border-gray-300">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
+                  <th className="border border-gray-300 px-4 py-3 text-left font-bold text-black">
                     Behavioral Indicators
                   </th>
                   <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
@@ -2212,7 +2212,7 @@ export default function OverallAssessmentBranchEval({
             <table className="w-full border-collapse border border-gray-300">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
+                  <th className="border border-gray-300 px-4 py-3 text-left font-bold text-black">
                     Behavioral Indicators
                   </th>
                   <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
@@ -2362,7 +2362,7 @@ export default function OverallAssessmentBranchEval({
                   </td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                  <td className="border border-gray-300  px-4 py-3 text-sm text-gray-700">
                     Respect for Others (L.E.A.D.E.R.)
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -2433,7 +2433,7 @@ export default function OverallAssessmentBranchEval({
             <table className="w-full border-collapse border border-gray-300">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
+                  <th className="border border-gray-300 px-4 py-3 text-left font-bold text-black">
                     Behavioral Indicators
                   </th>
                   <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
@@ -2452,7 +2452,7 @@ export default function OverallAssessmentBranchEval({
               </thead>
               <tbody>
                 <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                  <td className="border border-gray-300  px-4 py-3 text-sm text-gray-700">
                     Listening & Understanding
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -2496,7 +2496,7 @@ export default function OverallAssessmentBranchEval({
                   </td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                  <td className="border border-gray-300  px-4 py-3 text-sm text-gray-700">
                     Problem-Solving for Customer Satisfaction
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -2540,7 +2540,7 @@ export default function OverallAssessmentBranchEval({
                   </td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                  <td className="border border-gray-300  px-4 py-3 text-sm text-gray-700">
                     Product Knowledge for Customer Support (L.E.A.D.E.R.)
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -2584,7 +2584,7 @@ export default function OverallAssessmentBranchEval({
                   </td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                  <td className="border border-gray-300  px-4 py-3 text-sm text-gray-700">
                     Positive and Professional Attitude (L.E.A.D.E.R.)
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -2628,7 +2628,7 @@ export default function OverallAssessmentBranchEval({
                   </td>
                 </tr>
                 <tr>
-                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                  <td className="border border-gray-300  px-4 py-3 text-sm text-gray-700">
                     Timely Resolution of Customer Issues (L.E.A.D.E.R.)
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -2718,7 +2718,7 @@ export default function OverallAssessmentBranchEval({
               <tbody>
                 {/* Row 1: Leadership */}
                 <tr>
-                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
+                  <td className="border border-gray-300 text-center px-4 py-3 text-sm text-gray-700">
                     Leadership
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -2765,7 +2765,7 @@ export default function OverallAssessmentBranchEval({
                 </tr>
                 {/* Row 2: Motivation */}
                 <tr>
-                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
+                  <td className="border border-gray-300 text-center px-4 py-3 text-sm text-gray-700">
                     Motivation
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -2812,7 +2812,7 @@ export default function OverallAssessmentBranchEval({
                 </tr>
                 {/* Row 3: Decision-Making */}
                 <tr>
-                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
+                  <td className="border border-gray-300 text-center px-4 py-3 text-sm text-gray-700">
                     Decision-Making
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -2859,7 +2859,7 @@ export default function OverallAssessmentBranchEval({
                 </tr>
                 {/* Row 4: Planning & Resource Management */}
                 <tr>
-                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
+                  <td className="border border-gray-300 text-center px-4 py-3 text-sm text-gray-700">
                     Planning & Resource Management
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -2906,7 +2906,7 @@ export default function OverallAssessmentBranchEval({
                 </tr>
                 {/* Row 5: Performance Feedback */}
                 <tr>
-                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
+                  <td className="border border-gray-300 text-center px-4 py-3 text-sm text-gray-700">
                     Performance Feedback
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
@@ -2953,7 +2953,7 @@ export default function OverallAssessmentBranchEval({
                 </tr>
                 {/* Row 6: Conflict Resolution */}
                 <tr>
-                  <td className="border border-gray-300 text-center font-bold px-4 py-3 text-sm text-black">
+                  <td className="border border-gray-300 text-center px-4 py-3 text-sm text-gray-700">
                     Conflict Resolution
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">

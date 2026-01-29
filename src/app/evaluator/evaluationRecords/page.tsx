@@ -43,6 +43,7 @@ import ViewResultsModal from "@/components/evaluation/ViewResultsModal";
 import { setQuarter } from "date-fns";
 import { useDialogAnimation } from "@/hooks/useDialogAnimation";
 import { toastMessages } from "@/lib/toastMessages";
+import { Loader2 } from "lucide-react";
 interface Review {
   id: number;
   employee: any;
@@ -80,6 +81,7 @@ export default function OverviewTab() {
   const [perPage, setPerPage] = useState(0);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null);
+  const [deletingReviewId, setDeletingReviewId] = useState<number | null>(null);
   const dialogAnimationClass = useDialogAnimation({ duration: 0.4 });
   const [years, setYears] = useState<any[]>([]);
 
@@ -244,6 +246,9 @@ export default function OverviewTab() {
   };
 
   const handleDeleteClick = async (submission: any) => {
+    if (!submission) return;
+    
+    setDeletingReviewId(submission.id);
     try {
       await clientDataService.deleteSubmission(submission.id);
       await handleRefresh();
@@ -253,6 +258,7 @@ export default function OverviewTab() {
     } catch (error) {
       console.error("Error deleting submission:", error);
     } finally {
+      setDeletingReviewId(null);
       setReviewToDelete(null);
       setIsDeleteModalOpen(false);
     }
@@ -754,10 +760,18 @@ export default function OverviewTab() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => openDeleteModal(review)}
-                                className="text-xs px-2 py-1 bg-red-300 hover:bg-red-500 text-gray-700 hover:text-white border-red-200 cursor-pointer hover:scale-110 transition-transform duration-200 shadow-lg hover:shadow-xl transition-all duration-300"
+                                disabled={deletingReviewId === review.id}
+                                className="text-xs px-2 py-1 bg-red-300 hover:bg-red-500 text-gray-700 hover:text-white border-red-200 cursor-pointer hover:scale-110 transition-transform duration-200 shadow-lg hover:shadow-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50"
                                 title="Delete this evaluation record"
                               >
-                                ❌ Delete
+                                {deletingReviewId === review.id ? (
+                                  <div className="flex items-center gap-1">
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    <span>Deleting...</span>
+                                  </div>
+                                ) : (
+                                  "❌ Delete"
+                                )}
                               </Button>
                             </div>
                           </TableCell>
@@ -876,10 +890,18 @@ export default function OverviewTab() {
                   Cancel
                 </Button>
                 <Button
-                  className="bg-red-600 hover:bg-red-700 text-white cursor-pointer hover:scale-110 transition-transform duration-200 shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="bg-red-600 hover:bg-red-700 text-white cursor-pointer hover:scale-110 transition-transform duration-200 shadow-lg hover:shadow-xl transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={() => handleDeleteClick(reviewToDelete)}
+                  disabled={deletingReviewId !== null}
                 >
-                  ❌ Delete Permanently
+                  {deletingReviewId === reviewToDelete?.id ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Deleting...</span>
+                    </div>
+                  ) : (
+                    "❌ Delete Permanently"
+                  )}
                 </Button>
               </div>
             </DialogFooter>

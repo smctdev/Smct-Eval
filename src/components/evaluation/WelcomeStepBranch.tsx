@@ -7,30 +7,27 @@ import { ArrowLeft, X } from "lucide-react";
 import { EvaluationPayload } from "./types";
 import { useAuth, User } from "@/contexts/UserContext";
 
-interface WelcomeStepProps {
+interface WelcomeStepBranchProps {
   data: EvaluationPayload;
   updateDataAction: (updates: Partial<EvaluationPayload>) => void;
   employee?: User | null;
   onStartAction: () => void;
   onBackAction?: () => void;
-  evaluationType?: 'rankNfile' | 'basic' | 'default'; // Optional: evaluation type to determine which steps to show
+  evaluationType?: 'rankNfile' | 'basic' | 'default'; // For branch: 'rankNfile' = BranchRankNFile, 'default' or 'basic' = BranchManager
 }
 
-export default function WelcomeStep({
+export default function WelcomeStepBranch({
   employee,
   onStartAction,
   onBackAction,
   evaluationType = 'default',
-}: WelcomeStepProps) {
+}: WelcomeStepBranchProps) {
   const { user } = useAuth();
   // Signature can be a PNG file (base64 data URL or file path)
   const hasSignature = user?.signature;
   
-  // This component is for HO (Head Office) evaluations only
-  // For branch evaluations, use WelcomeStepBranch component
-  
-  // Check if employee is Area Manager (HO only)
-  const isEmployeeAreaManager = () => {
+  // Check if employee is Branch Manager or Branch Supervisor
+  const isEmployeeBranchManagerOrSupervisor = () => {
     if (!employee?.positions) return false;
     
     const position = employee.positions;
@@ -39,22 +36,24 @@ export default function WelcomeStep({
       : (position as any)?.label?.toUpperCase() || '';
       
     return (
-      positionLabel === 'AREA MANAGER' || 
-      positionLabel.includes('AREA MANAGER')
+      positionLabel === 'BRANCH MANAGER' || 
+      positionLabel.includes('BRANCH MANAGER') ||
+      positionLabel === 'BRANCH SUPERVISOR' || 
+      positionLabel.includes('BRANCH SUPERVISOR') ||
+      (positionLabel.includes('MANAGER') && !positionLabel.includes('AREA MANAGER')) ||
+      positionLabel.includes('SUPERVISOR')
     );
   };
 
-  const isAreaMgr = isEmployeeAreaManager();
+  const isBranchManager = isEmployeeBranchManagerOrSupervisor();
+  const isBranchRankNFile = evaluationType === 'rankNfile';
+  // Branch Manager evaluations use 'default' or 'basic' evaluationType
+  // If user picks "manager" evaluation type, show Managerial Skills regardless of employee position
+  const isBranchManagerEvaluation = evaluationType === 'default' || evaluationType === 'basic';
   
-  // For HO evaluations:
-  // - RankNFile: Steps 1-6, Overall Assessment (no Customer Service, no Managerial Skills)
-  // - Basic: Steps 1-6, Step 7 (Managerial Skills), Overall Assessment
-  // - Area Manager: Steps 1-6, Step 7 (Customer Service), Step 8 (Managerial Skills), Overall Assessment
-  const showStep7CustomerService = isAreaMgr; // Only Area Managers get Customer Service in HO
-  const showStep7ManagerialSkills = evaluationType === 'basic'; // Basic HO gets Managerial Skills as Step 7
-  const showStep8ManagerialSkills = isAreaMgr; // Area Managers get Managerial Skills as Step 8
-  
-  // Define steps based on evaluation type (HO only)
+  // Define steps based on evaluation type
+  // BranchRankNFile: Steps 1-6, Step 7 (Customer Service), Overall Assessment
+  // BranchManager: Steps 1-6, Step 7 (Customer Service), Step 8 (Managerial Skills), Overall Assessment
   const getEvaluationSteps = () => {
     const steps = [
       { id: 1, title: "Employee Information/Job Knowledge" },
@@ -67,22 +66,16 @@ export default function WelcomeStep({
     
     let nextStepId = 7;
     
-    // For Area Managers: Step 7 is Customer Service, Step 8 is Managerial Skills
-    if (isAreaMgr) {
-      if (showStep7CustomerService) {
-        steps.push({ id: nextStepId++, title: "Customer Service" });
-      }
-      if (showStep8ManagerialSkills) {
-        steps.push({ id: nextStepId++, title: "Managerial Skills" });
-      }
-    }
-    // For BasicHo (HO users picking basic): Step 7 is Managerial Skills
-    else if (showStep7ManagerialSkills) {
+    // Step 7: Customer Service (always shown for branch evaluations)
+    steps.push({ id: nextStepId++, title: "Customer Service" });
+    
+    // Step 8: Managerial Skills (shown when evaluationType is 'default' or 'basic', not 'rankNfile')
+    // This is determined by the evaluation type selection, not the employee's position
+    if (isBranchManagerEvaluation) {
       steps.push({ id: nextStepId++, title: "Managerial Skills" });
     }
-    // For RankNFile: No additional steps, goes directly to Overall Assessment
     
-    // Add Overall Assessment/End step with unique ID
+    // Overall Assessment
     steps.push({ id: nextStepId, title: "Overall Assessment" });
     
     return steps;
@@ -114,11 +107,9 @@ export default function WelcomeStep({
           Welcome to Performance Evaluation
         </h3>
         <p className="text-gray-600 mb-6">
-          {evaluationType === 'basic'
-            ? "This comprehensive evaluation for Head Office includes managerial skills assessment and will help evaluate performance across multiple dimensions."
-            : isAreaMgr
-            ? "This comprehensive evaluation for Head Office Area Managers includes customer service and managerial skills assessment and will help evaluate performance across multiple dimensions."
-            : "This comprehensive evaluation for Head Office will help assess performance across multiple dimensions."}
+          {isBranchManagerEvaluation
+            ? "This comprehensive evaluation for Branch Managers includes customer service and managerial skills assessment and will help evaluate performance across multiple dimensions."
+            : "This comprehensive evaluation for Branch employees includes customer service assessment and will help evaluate performance across multiple dimensions."}
         </p>
       </div>
 
@@ -165,6 +156,16 @@ export default function WelcomeStep({
               </div>
               <div>
                 <Badge className="bg-purple-100 text-purple-800 mb-1">
+                  Branch
+                </Badge>
+                <p className="text-sm text-gray-900">
+                  {Array.isArray(employee.branches) 
+                    ? employee.branches[0]?.branch_name || employee.branches[0]?.branch_code || "N/A"
+                    : (employee.branches as any)?.branch_name || (employee.branches as any)?.branch_code || "N/A"}
+                </p>
+              </div>
+              <div>
+                <Badge className="bg-orange-100 text-orange-800 mb-1">
                   Role
                 </Badge>
                 <p className="text-sm text-gray-900">
@@ -336,3 +337,4 @@ export default function WelcomeStep({
     </div>
   );
 }
+

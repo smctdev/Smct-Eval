@@ -45,6 +45,7 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
     null
   ); // Track the last drawn signature (data URL)
   const [localSignature, setLocalSignature] = useState<string | null>(null); // Store signature locally until save
+  const [hasDrawingOnCanvas, setHasDrawingOnCanvas] = useState(false); // Track if there's drawing on canvas (not yet captured)
   const [showInstructions, setShowInstructions] = useState(true); // Show instructions overlay before drawing
   const { user } = useAuth();
   // Note: Polling for signature reset approval is now handled globally in UserContext
@@ -53,8 +54,22 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
   // Expose method to get current signature
   useImperativeHandle(ref, () => ({
     getSignature: () => {
-      // Return local signature if exists, otherwise return value prop
-      return localSignature || value || null;
+      // If there's a saved local signature, return it
+      if (localSignature) {
+        return localSignature;
+      }
+      
+      // If there's drawing on canvas, capture it now (on-demand capture)
+      if (hasDrawingOnCanvas) {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const dataURL = canvas.toDataURL("image/png");
+          return dataURL;
+        }
+      }
+      
+      // Otherwise return value prop (saved signature from server)
+      return value || null;
     }
   }));
   // Helper function to get coordinates
@@ -113,12 +128,13 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
       // If value changed from data URL to server path, it means it was just saved
       if (
         isFromServer &&
-        (lastDrawnSignature?.startsWith("data:") || localSignature)
+        (lastDrawnSignature?.startsWith("data:") || localSignature || hasDrawingOnCanvas)
       ) {
         console.log("Signature was just saved! Marking as saved.");
         setIsSavedSignature(true);
         setLastDrawnSignature(null); // Clear the drawn signature since it's now saved
         setLocalSignature(null); // Clear local signature since it's now saved
+        setHasDrawingOnCanvas(false); // Clear drawing state since it's now saved
       } else {
         setIsSavedSignature(isFromServer);
       }
@@ -132,13 +148,14 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
       setPreviewImage(imageUrl);
       setHasSignature(true);
     } else if (!value || value === null || value === "") {
-      // No signature, reset state (only if no local signature)
-      if (!localSignature) {
+      // No signature, reset state (only if no local signature and no drawing on canvas)
+      if (!localSignature && !hasDrawingOnCanvas) {
         console.log("No signature value, resetting");
         setHasSignature(false);
         setPreviewImage("");
         setIsSavedSignature(false);
         setLastDrawnSignature(null);
+        setHasDrawingOnCanvas(false);
       }
     }
   }, [value, lastDrawnSignature, localSignature]);
@@ -175,12 +192,15 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
     setShowInstructions(false);
   };
 
-  // Toggle drawing: click to start, click again to stop
-  const toggleDrawing = (
+  // Start drawing: press and hold to draw
+  const startDrawing = (
     e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
   ) => {
     // If instructions are showing, don't allow drawing
     if (showInstructions) return;
+
+    // Prevent default to avoid scrolling on touch devices
+    e.preventDefault();
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -188,24 +208,11 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    if (isDrawing) {
-      // Stop drawing
-      setIsDrawing(false);
-      setHasSignature(true);
-      setIsSavedSignature(false); // Newly drawn signature, not saved yet
-
-      // Convert canvas to data URL and store locally
-      const dataURL = canvas.toDataURL("image/png");
-      setPreviewImage(dataURL);
-      setLocalSignature(dataURL); // Store locally
-      setLastDrawnSignature(dataURL); // Track this as the drawn signature
-    } else {
-      // Start drawing
-      const { x, y } = getCoordinates(e, canvas);
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      setIsDrawing(true);
-    }
+    // Start drawing
+    const { x, y } = getCoordinates(e, canvas);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    setIsDrawing(true);
   };
 
   const draw = (
@@ -213,6 +220,9 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
   ) => {
     // Disable drawing if instructions are showing
     if (!isDrawing || showInstructions) return;
+
+    // Prevent default to avoid scrolling on touch devices
+    e.preventDefault();
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -225,20 +235,36 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
     ctx.stroke();
   };
 
-  const stopDrawing = () => {
+  const stopDrawing = (
+    e?: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
     if (!isDrawing) return;
+    
+    // Prevent default to avoid scrolling on touch devices
+    if (e) {
+      e.preventDefault();
+    }
+    
     setIsDrawing(false);
-    setHasSignature(true);
-    setIsSavedSignature(false); // Newly drawn signature, not saved yet
-
-    // Convert canvas to data URL and store locally (don't update parent yet)
+    
+    // Mark that there's drawing on canvas (but don't capture yet - wait for Save)
+    // Check if canvas has any drawing by checking if it's not empty
     const canvas = canvasRef.current;
     if (canvas) {
-      const dataURL = canvas.toDataURL("image/png");
-      setPreviewImage(dataURL);
-      setLocalSignature(dataURL); // Store locally
-      setLastDrawnSignature(dataURL); // Track this as the drawn signature
-      // Don't call onChangeAction here - only update parent when Save is clicked
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const hasContent = imageData.data.some((channel, index) => {
+          // Check alpha channel (every 4th value) - if any pixel is not transparent
+          return index % 4 === 3 && channel > 0;
+        });
+        
+        if (hasContent) {
+          setHasDrawingOnCanvas(true);
+          setHasSignature(true);
+          setIsSavedSignature(false); // Newly drawn signature, not saved yet
+        }
+      }
     }
   };
 
@@ -248,6 +274,7 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
     setIsSavedSignature(false);
     setPreviewImage("");
     setLastDrawnSignature(null);
+    setHasDrawingOnCanvas(false);
     onChangeAction(null); // Notify parent that signature is cleared
 
     // Small delay to ensure canvas is rendered before resetting
@@ -294,7 +321,7 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
                    How to Draw Your Signature
                  </h3>
                  <p className="text-sm text-gray-600 leading-relaxed">
-                   To draw a signature, click to start and click again to finish.
+                   Press and hold to draw your signature. Release to finish.
                  </p>
                </div>
                <Button
@@ -308,7 +335,8 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
            </div>
          )}
 
-         {hasSignature && (previewImage || localSignature) ? (
+         {/* Show image preview only for saved signatures from server, keep canvas visible for in-progress drawings */}
+         {hasSignature && isSavedSignature && (previewImage || localSignature) && !hasDrawingOnCanvas ? (
           <div className="w-full h-40 bg-white rounded border border-gray-200 flex items-center justify-center overflow-hidden">
             <img
               src={localSignature || previewImage}
@@ -330,10 +358,11 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
                hasError ? "border-red-300" : "border-gray-200"
              } ${showInstructions ? "cursor-not-allowed opacity-50" : "cursor-crosshair"}`}
              style={{ display: "block" }}
-             onMouseDown={showInstructions ? undefined : toggleDrawing}
+             onMouseDown={showInstructions ? undefined : startDrawing}
              onMouseMove={showInstructions ? undefined : draw}
-             onMouseLeave={showInstructions ? undefined : stopDrawing}
-             onTouchStart={showInstructions ? undefined : toggleDrawing}
+             onMouseUp={showInstructions ? undefined : stopDrawing}
+             onMouseLeave={showInstructions ? undefined : () => stopDrawing()}
+             onTouchStart={showInstructions ? undefined : startDrawing}
              onTouchMove={showInstructions ? undefined : draw}
              onTouchEnd={showInstructions ? undefined : stopDrawing}
            />
@@ -343,15 +372,19 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
           className={`text-sm mt-2 text-center ${
             hasError
               ? "text-red-600"
-              : hasSignature
+              : hasSignature && isSavedSignature
               ? "text-green-600"
+              : hasDrawingOnCanvas
+              ? "text-blue-600"
               : "text-gray-500"
           }`}
         >
           {hasError
             ? "⚠️ Signature is required"
-            : hasSignature
-            ? "Signature captured ✓"
+            : hasSignature && isSavedSignature
+            ? "Signature saved ✓"
+            : hasDrawingOnCanvas
+            ? "Signature ready - Click Save to capture"
             : required
             ? "Please draw your signature above *"
             : "Draw your signature above"}
@@ -410,7 +443,9 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
         </div>
 
         {hasSignature && (
-          <div className="text-sm text-green-600 flex items-center">
+          <div className={`text-sm flex items-center ${
+            isSavedSignature ? "text-green-600" : "text-blue-600"
+          }`}>
             <svg
               className="w-4 h-4 mr-1"
               fill="currentColor"
@@ -422,7 +457,7 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
                 clipRule="evenodd"
               />
             </svg>
-            Signature Ready
+            {isSavedSignature ? "Signature Saved" : "Signature Ready - Click Save to capture"}
           </div>
         )}
       </div>
