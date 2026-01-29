@@ -1323,9 +1323,29 @@ export default function ViewResultsModal({
     );
   };
 
+  // Check if employee (being evaluated) is Area Manager
+  const isEmployeeAreaManager = () => {
+    if (!submission?.employee?.positions) return false;
+    
+    const position = submission.employee.positions;
+    const positionLabel = typeof position === 'string' 
+      ? position.toUpperCase() 
+      : (position as any)?.label?.toUpperCase() || '';
+      
+    return (
+      positionLabel === 'AREA MANAGER' || 
+      positionLabel.includes('AREA MANAGER')
+    );
+  };
+
   const isAreaMgr = isEvaluatorAreaManager();
   const isEvaluatorBranchMgrOrSup = isEvaluatorBranchManagerOrSupervisor();
   const isEmployeeBranchMgrOrSup = isEmployeeBranchManagerOrSupervisor();
+  const isEmployeeAreaMgr = isEmployeeAreaManager();
+  
+  // Determine if this is a manager evaluation (Area Manager or Branch Manager/Supervisor)
+  // Managers should have BOTH Customer Service AND Managerial Skills
+  const isManagerEvaluation = isEmployeeAreaMgr || isEmployeeBranchMgrOrSup;
   
   // ViewResultsModalBranchManager is ONLY used for Branch Manager evaluations
   // So we should ALWAYS show the 7 detailed job targets and hide question 5
@@ -1426,6 +1446,7 @@ export default function ViewResultsModal({
             );
           } else {
             // Default: 20%, 20%, 10%, 10%, 5%, 5%, 30% (with Customer Service)
+            // For managers (Area Manager, Branch Manager): 15%, 15%, 10%, 10%, 5%, 5%, 25% (Customer Service), 15% (Managerial Skills)
             const customer_serviceScore = submission.customer_services
               ? calculateScore(
                   (submission.customer_services || []).map((item: any) =>
@@ -1433,15 +1454,39 @@ export default function ViewResultsModal({
                   )
                 )
               : 0;
-            return (
-              job_knowledgeScore * 0.2 +
-              quality_of_workScore * 0.2 +
-              adaptabilityScore * 0.1 +
-              teamworkScore * 0.1 +
-              reliabilityScore * 0.05 +
-              ethicalScore * 0.05 +
-              customer_serviceScore * 0.3
-            );
+            const managerial_skillsScore = submission.managerial_skills
+              ? calculateScore(
+                  (submission.managerial_skills || []).map((item: any) =>
+                    String(item.score)
+                  )
+                )
+              : 0;
+            
+            // If this is a manager evaluation and has both Customer Service and Managerial Skills,
+            // use adjusted weights: 15%, 15%, 10%, 10%, 5%, 5%, 25% (CS), 15% (MS)
+            // Otherwise, use standard weights: 20%, 20%, 10%, 10%, 5%, 5%, 30% (CS)
+            if (isManagerEvaluation && managerial_skillsScore > 0 && customer_serviceScore > 0) {
+              return (
+                job_knowledgeScore * 0.15 +
+                quality_of_workScore * 0.15 +
+                adaptabilityScore * 0.1 +
+                teamworkScore * 0.1 +
+                reliabilityScore * 0.05 +
+                ethicalScore * 0.05 +
+                customer_serviceScore * 0.25 +
+                managerial_skillsScore * 0.15
+              );
+            } else {
+              return (
+                job_knowledgeScore * 0.2 +
+                quality_of_workScore * 0.2 +
+                adaptabilityScore * 0.1 +
+                teamworkScore * 0.1 +
+                reliabilityScore * 0.05 +
+                ethicalScore * 0.05 +
+                customer_serviceScore * 0.3
+              );
+            }
           }
         })();
 
@@ -1762,6 +1807,51 @@ export default function ViewResultsModal({
       indicator: "Resolves customer issues promptly and efficiently",
       example:
         "Addresses and resolves customer complaints or concerns within established timeframes. Ensures follow-ups are conducted for unresolved issues until completion.",
+    },
+  };
+
+  const MANAGERIAL_SKILLS = {
+    1: {
+      title: "Leadership",
+      indicator:
+        "Guides the team to meet goals and improve performance",
+      example:
+        "Encourages the team to complete a critical project ahead of the deadline while maintaining quality.",
+    },
+    2: {
+      title: "Motivation",
+      indicator:
+        "Keeps the team engaged and focused on achieving goals and targets",
+      example:
+        "Recognizes and rewards team achievements to maintain high morale and engagement.",
+    },
+    3: {
+      title: "Decision-Making",
+      indicator:
+        "Makes timely and informed decisions that benefit the department or company",
+      example:
+        "Evaluates a situation, assesses needs, considers alternatives, and implements solutions that benefit the team and the company.",
+    },
+    4: {
+      title: "Planning & Resource Management",
+      indicator:
+        "Creates detailed plans and allocates resources, time, and budget efficiently",
+      example:
+        "Develops a timeline for team deliverables, ensuring tasks are assigned based on workload and skills.",
+    },
+    5: {
+      title: "Performance Feedback",
+      indicator:
+        "Regularly monitors performance and gives constructive feedback",
+      example:
+        "Holds one-on-one meetings to discuss individual performance and offer guidance for improvement.",
+    },
+    6: {
+      title: "Conflict Resolution",
+      indicator:
+        "Resolves disagreements professionally and fairly",
+      example:
+        "Mediates conflict between team members, ensuring a collaborative solution that benefits the group.",
     },
   };
 
@@ -3057,85 +3147,7 @@ export default function ViewResultsModal({
                 </Card>
               )}
 
-              {/* Step 7: Managerial Skills - Only for Basic HO evaluations */}
-              {evaluationType === 'basic' && submission.managerial_skills && (
-                <Card className="shadow-md hide-in-print">
-                  <CardHeader className="bg-teal-50 border-b border-teal-200">
-                    <CardTitle className="text-xl font-semibold text-teal-900">
-                      VII. MANAGERIAL SKILLS
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <p className="text-sm text-gray-600 mb-4">
-                      Leadership abilities. Decision-making skills. Team management and development.
-                    </p>
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse border border-gray-300">
-                        <thead>
-                          <tr className="bg-gray-100">
-                            <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900"></th>
-                            <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
-                              Behavioral Indicators
-                            </th>
-                            <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
-                              Example
-                            </th>
-                            <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900 w-24">
-                              Score
-                            </th>
-                            <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900 w-32">
-                              Rating
-                            </th>
-                            <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
-                              Comments
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(submission.managerial_skills || []).map(
-                            (item: {
-                              question_number: 1 | 2 | 3 | 4 | 5 | 6;
-                              score: number;
-                              explanation: string;
-                            }) => {
-                              return (
-                                <tr key={item.question_number}>
-                                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                                    Question {item.question_number}
-                                  </td>
-                                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                                    Managerial Skills Indicator {item.question_number}
-                                  </td>
-                                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
-                                    Example for Managerial Skills {item.question_number}
-                                  </td>
-                                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                                    {item.score}
-                                  </td>
-                                  <td className="border border-gray-300 px-4 py-3 text-center">
-                                    <div
-                                      className={`px-2 py-1 rounded text-sm font-medium ${ratingBG(
-                                        item.score
-                                      )}`}
-                                    >
-                                      {rating(item.score)}
-                                    </div>
-                                  </td>
-                                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
-                                    {item.explanation || ""}
-                                  </td>
-                                </tr>
-                              );
-                            }
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Step 7: Customer Service - Only show for default evaluations */}
+              {/* Step 7: Customer Service - Show for default evaluations (branch evaluations) */}
               {evaluationType === 'default' && submission.customer_services && (
                 <Card className="shadow-md hide-in-print">
                   <CardHeader className="bg-teal-50 border-b border-teal-200">
@@ -3190,6 +3202,88 @@ export default function ViewResultsModal({
                                   </td>
                                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
                                     {indicators.example}
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-3 text-center font-medium">
+                                    {item.score}
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-3 text-center">
+                                    <div
+                                      className={`px-2 py-1 rounded text-sm font-medium ${ratingBG(
+                                        item.score
+                                      )}`}
+                                    >
+                                      {rating(item.score)}
+                                    </div>
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700 bg-yellow-50">
+                                    {item.explanation || ""}
+                                  </td>
+                                </tr>
+                              );
+                            }
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Step 8: Managerial Skills - Always show for Branch Manager evaluations if data exists */}
+              {/* Branch Managers should have BOTH Customer Service (Step 7) AND Managerial Skills (Step 8) */}
+              {submission.managerial_skills && (
+                <Card className="shadow-md hide-in-print">
+                  <CardHeader className="bg-teal-50 border-b border-teal-200">
+                    <CardTitle className="text-xl font-semibold text-teal-900">
+                      VIII. MANAGERIAL SKILLS
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <p className="text-sm text-gray-600 mb-4">
+                      Leadership abilities. Decision-making skills. Team management and development.
+                    </p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse border border-gray-300">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900"></th>
+                            <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
+                              Behavioral Indicators
+                            </th>
+                            <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
+                              Example
+                            </th>
+                            <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900 w-24">
+                              Score
+                            </th>
+                            <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-900 w-32">
+                              Rating
+                            </th>
+                            <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-900">
+                              Comments
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(submission.managerial_skills || []).map(
+                            (item: {
+                              question_number: 1 | 2 | 3 | 4 | 5 | 6;
+                              score: number;
+                              explanation: string;
+                            }) => {
+                              const indicators =
+                                MANAGERIAL_SKILLS[item.question_number as keyof typeof MANAGERIAL_SKILLS];
+
+                              return (
+                                <tr key={item.question_number}>
+                                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                                    {indicators?.title || `Question ${item.question_number}`}
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                                    {indicators?.indicator || `Managerial Skills Indicator ${item.question_number}`}
+                                  </td>
+                                  <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
+                                    {indicators?.example || `Example for Managerial Skills ${item.question_number}`}
                                   </td>
                                   <td className="border border-gray-300 px-4 py-3 text-center font-medium">
                                     {item.score}
@@ -3383,7 +3477,11 @@ export default function ViewResultsModal({
                                   ).toFixed(2)}
                                 </td>
                                 <td className="border-2 border-gray-400 px-4 py-3 text-center font-bold text-base">
-                                  {evaluationType === 'rankNfile' || evaluationType === 'basic' ? '25%' : '20%'}
+                                  {evaluationType === 'rankNfile' || evaluationType === 'basic' 
+                                    ? '25%' 
+                                    : (isManagerEvaluation && submission.managerial_skills && submission.customer_services) 
+                                      ? '15%' 
+                                      : '20%'}
                                 </td>
                                 <td className="border-2 border-gray-400 px-4 py-3 text-center font-bold text-base">
                                   {evaluationType === 'rankNfile' || evaluationType === 'basic' ? (
@@ -3394,6 +3492,14 @@ export default function ViewResultsModal({
                                         }
                                       )
                                     ) * 0.25).toFixed(2)
+                                  ) : (isManagerEvaluation && submission.managerial_skills && submission.customer_services) ? (
+                                    (calculateScore(
+                                      (submission.quality_of_works || []).map(
+                                        (item: any) => {
+                                          return String(item.score || 0);
+                                        }
+                                      )
+                                    ) * 0.15).toFixed(2)
                                   ) : (
                                     (calculateScore(
                                       (submission.quality_of_works || []).map(
@@ -3696,8 +3802,8 @@ export default function ViewResultsModal({
                                 </td>
                               </tr>
 
-                              {/* Managerial Skills - Only for Basic HO */}
-                              {evaluationType === 'basic' && submission.managerial_skills && (
+                              {/* Managerial Skills - Always show for Branch Manager evaluations if data exists */}
+                              {submission.managerial_skills && (
                                 <tr>
                                   <td className="border-2 border-gray-400 px-4 py-3 text-sm text-gray-700 font-medium">
                                     Managerial Skills
@@ -3748,7 +3854,7 @@ export default function ViewResultsModal({
                                     ).toFixed(2)}
                                   </td>
                                   <td className="border-2 border-gray-400 px-4 py-3 text-center font-bold text-base">
-                                    30%
+                                    {isManagerEvaluation && submission.customer_services ? '15%' : '30%'}
                                   </td>
                                   <td className="border-2 border-gray-400 px-4 py-3 text-center font-bold text-base">
                                     {(
@@ -3756,13 +3862,13 @@ export default function ViewResultsModal({
                                         (submission.managerial_skills || []).map((item: any) => {
                                           return String(item.score || 0);
                                         })
-                                      ) * 0.3
+                                      ) * (isManagerEvaluation && submission.customer_services ? 0.15 : 0.3)
                                     ).toFixed(2)}
                                   </td>
                                 </tr>
                               )}
 
-                              {/* Customer Service - Only for Default evaluations */}
+                              {/* Customer Service - Show for Default evaluations (branch evaluations) */}
                               {evaluationType === 'default' && submission.customer_services && (
                                 <tr>
                                   <td className="border-2 border-gray-400 px-4 py-3 text-sm text-gray-700 font-medium">
@@ -3816,7 +3922,7 @@ export default function ViewResultsModal({
                                     ).toFixed(2)}
                                   </td>
                                   <td className="border-2 border-gray-400 px-4 py-3 text-center font-bold text-base">
-                                    30%
+                                    {isManagerEvaluation && submission.managerial_skills ? '25%' : '30%'}
                                   </td>
                                   <td className="border-2 border-gray-400 px-4 py-3 text-center font-bold text-base">
                                     {(
@@ -3826,7 +3932,7 @@ export default function ViewResultsModal({
                                             return String(item.score || 0);
                                           }
                                         )
-                                      ) * 0.3
+                                      ) * (isManagerEvaluation && submission.managerial_skills ? 0.25 : 0.3)
                                     ).toFixed(2)}
                                   </td>
                                 </tr>

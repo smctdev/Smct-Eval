@@ -26,36 +26,110 @@ export default function WelcomeStep({
   // Signature can be a PNG file (base64 data URL or file path)
   const hasSignature = user?.signature;
   
-  // Check if evaluator's branch is HO (Head Office)
-  const isEvaluatorHO = () => {
-    if (!user?.branches) return false;
+  // Check if employee being evaluated is HO (Head Office)
+  // This determines the evaluationType based on the employee being evaluated, not the evaluator
+  const isEmployeeHO = () => {
+    if (!employee?.branches) {
+      // Fallback: if evaluationType is 'rankNfile' or 'basic', it's definitely an HO evaluation
+      return evaluationType === 'rankNfile' || evaluationType === 'basic';
+    }
     
     // Handle branches as array
-    if (Array.isArray(user.branches)) {
-      const branch = user.branches[0];
+    if (Array.isArray(employee.branches)) {
+      const branch = employee.branches[0];
       if (branch) {
         const branchName = branch.branch_name?.toUpperCase() || "";
         const branchCode = branch.branch_code?.toUpperCase() || "";
-        return branchName === "HO" || branchCode === "HO" || branchName.includes("HEAD OFFICE");
+        return (
+          branchName === "HO" || 
+          branchCode === "HO" || 
+          branchName.includes("HEAD OFFICE") ||
+          branchCode.includes("HEAD OFFICE") ||
+          branchName === "HEAD OFFICE" ||
+          branchCode === "HEAD OFFICE"
+        );
       }
     }
     
     // Handle branches as object
-    if (typeof user.branches === 'object') {
-      const branchName = (user.branches as any)?.branch_name?.toUpperCase() || "";
-      const branchCode = (user.branches as any)?.branch_code?.toUpperCase() || "";
-      return branchName === "HO" || branchCode === "HO" || branchName.includes("HEAD OFFICE");
+    if (typeof employee.branches === 'object') {
+      const branchName = (employee.branches as any)?.branch_name?.toUpperCase() || "";
+      const branchCode = (employee.branches as any)?.branch_code?.toUpperCase() || "";
+      return (
+        branchName === "HO" || 
+        branchCode === "HO" || 
+        branchName.includes("HEAD OFFICE") ||
+        branchCode.includes("HEAD OFFICE") ||
+        branchName === "HEAD OFFICE" ||
+        branchCode === "HEAD OFFICE"
+      );
     }
     
-    return false;
+    // Fallback: check if branch field exists directly
+    if ((employee as any).branch) {
+      const branchName = String((employee as any).branch).toUpperCase();
+      return (
+        branchName === "HO" || 
+        branchName === "HEAD OFFICE" ||
+        branchName.includes("HEAD OFFICE") ||
+        branchName.includes("/HO")
+      );
+    }
+    
+    // Final fallback: if evaluationType is 'rankNfile' or 'basic', it's definitely an HO evaluation
+    return evaluationType === 'rankNfile' || evaluationType === 'basic';
   };
 
-  const isHO = isEvaluatorHO();
+  const isHO = isEmployeeHO();
+  
+  // Check if employee is Area Manager
+  const isEmployeeAreaManager = () => {
+    if (!employee?.positions) return false;
+    
+    const position = employee.positions;
+    const positionLabel = typeof position === 'string' 
+      ? position.toUpperCase() 
+      : (position as any)?.label?.toUpperCase() || '';
+      
+    return (
+      positionLabel === 'AREA MANAGER' || 
+      positionLabel.includes('AREA MANAGER')
+    );
+  };
+
+  // Check if employee is Branch Manager or Branch Supervisor
+  const isEmployeeBranchManagerOrSupervisor = () => {
+    if (!employee?.positions) return false;
+    
+    const position = employee.positions;
+    const positionLabel = typeof position === 'string' 
+      ? position.toUpperCase() 
+      : (position as any)?.label?.toUpperCase() || '';
+      
+    return (
+      positionLabel === 'BRANCH MANAGER' || 
+      positionLabel.includes('BRANCH MANAGER') ||
+      positionLabel === 'BRANCH SUPERVISOR' || 
+      positionLabel.includes('BRANCH SUPERVISOR') ||
+      (positionLabel.includes('MANAGER') && !positionLabel.includes('AREA MANAGER')) ||
+      positionLabel.includes('SUPERVISOR')
+    );
+  };
+
+  const isAreaMgr = isEmployeeAreaManager();
+  const isBranchMgrOrSup = isEmployeeBranchManagerOrSupervisor();
+  const isManagerEvaluation = isAreaMgr || isBranchMgrOrSup;
   
   // Show Step7 (Customer Service) if:
-  // - Not HO evaluator (default behavior)
+  // - Employee is NOT HO (branch employees get Customer Service)
+  // - OR employee is a manager (managers get both Customer Service AND Managerial Skills)
   // - NOT for RankNfile evaluation type (RankNfileHo doesn't include Customer Service)
-  const showStep7 = !isHO && evaluationType !== 'rankNfile';
+  const showStep7 = (!isHO || isManagerEvaluation) && evaluationType !== 'rankNfile';
+  
+  // Show Step8 (Managerial Skills) if:
+  // - For BasicHo (HO users picking basic): Step 7 is Managerial Skills
+  // - OR employee is a manager (managers get both Customer Service AND Managerial Skills)
+  const showStep8ManagerialSkills = (evaluationType === 'basic' && isHO) || isManagerEvaluation;
   
   // Define steps based on evaluation type
   const getEvaluationSteps = () => {
@@ -68,19 +142,30 @@ export default function WelcomeStep({
       { id: 6, title: "Ethical & Professional Behavior" },
     ];
     
+    let nextStepId = 7;
+    
+    // For managers: Step 7 is Customer Service, Step 8 is Managerial Skills
+    if (isManagerEvaluation) {
+      if (showStep7) {
+        steps.push({ id: nextStepId++, title: "Customer Service" });
+      }
+      if (showStep8ManagerialSkills) {
+        steps.push({ id: nextStepId++, title: "Managerial Skills" });
+      }
+    }
     // For BasicHo (HO users picking basic): Step 7 is Managerial Skills
-    if (evaluationType === 'basic' && isHO) {
-      steps.push({ id: 7, title: "Managerial Skills" });
+    else if (evaluationType === 'basic' && isHO) {
+      steps.push({ id: nextStepId++, title: "Managerial Skills" });
     }
     // For other cases: Step 7 is Customer Service (if applicable)
     else if (showStep7) {
-      steps.push({ id: 7, title: "Customer Service" });
+      steps.push({ id: nextStepId++, title: "Customer Service" });
     }
     
-    // Add Overall Assessment/End step
+    // Add Overall Assessment/End step with unique ID
     // For rankNfile, it goes directly from Step 6 to End (no Customer Service)
     if (evaluationType === 'basic' || evaluationType === 'default' || evaluationType === 'rankNfile') {
-      steps.push({ id: steps.length + 1, title: "Overall Assessment" });
+      steps.push({ id: nextStepId, title: "Overall Assessment" });
     }
     
     return steps;

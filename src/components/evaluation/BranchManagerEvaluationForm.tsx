@@ -624,6 +624,10 @@ export default function BranchManagerEvaluationForm({
                   if (step.id === 1 || step.id === 2 || step.id === 7) {
                     stepProps.evaluationType = evaluationType;
                   }
+                  // For Step2 (Quality of Work), force show job targets for BranchManagerEvaluationForm
+                  if (step.id === 2) {
+                    stepProps.forceShowJobTargets = true;
+                  }
                   return <StepComponent {...stepProps} />;
                 })()}
               </CardContent>

@@ -48,13 +48,14 @@ export default function EvaluationForm({
   const [welcomeAnimationKey, setWelcomeAnimationKey] = useState(0);
   const { user } = useAuth();
   
-  // Check if evaluator's branch is HO (Head Office)
-  const isEvaluatorHO = () => {
-    if (!user?.branches) return false;
+  // Check if employee being evaluated is HO (Head Office)
+  // This determines the evaluationType based on the employee being evaluated, not the evaluator
+  const isEmployeeHO = () => {
+    if (!employee?.branches) return false;
     
     // Handle branches as array
-    if (Array.isArray(user.branches)) {
-      const branch = user.branches[0];
+    if (Array.isArray(employee.branches)) {
+      const branch = employee.branches[0];
       if (branch) {
         const branchName = branch.branch_name?.toUpperCase() || "";
         const branchCode = branch.branch_code?.toUpperCase() || "";
@@ -70,9 +71,9 @@ export default function EvaluationForm({
     }
     
     // Handle branches as object
-    if (typeof user.branches === 'object') {
-      const branchName = (user.branches as any)?.branch_name?.toUpperCase() || "";
-      const branchCode = (user.branches as any)?.branch_code?.toUpperCase() || "";
+    if (typeof employee.branches === 'object') {
+      const branchName = (employee.branches as any)?.branch_name?.toUpperCase() || "";
+      const branchCode = (employee.branches as any)?.branch_code?.toUpperCase() || "";
       return (
         branchName === "HO" || 
         branchCode === "HO" || 
@@ -83,43 +84,48 @@ export default function EvaluationForm({
       );
     }
     
+    // Fallback: check if branch field exists directly
+    if ((employee as any).branch) {
+      const branchName = String((employee as any).branch).toUpperCase();
+      return (
+        branchName === "HO" || 
+        branchName === "HEAD OFFICE" ||
+        branchName.includes("HEAD OFFICE") ||
+        branchName.includes("/HO")
+      );
+    }
+    
     return false;
   };
 
-  // Check if evaluator is Area Manager
-  const isEvaluatorAreaManager = () => {
-    if (!user?.positions) return false;
+  // Check if employee is Area Manager
+  const isEmployeeAreaManager = () => {
+    if (!employee?.positions) return false;
     
     // Get position name from various possible fields
     const positionName = (
-      user.positions?.label || 
-      user.positions?.name || 
-      (user as any).position ||
+      employee.positions?.label || 
+      employee.positions?.name || 
+      (employee as any).position ||
       ""
-    ).toLowerCase().trim();
+    ).toUpperCase().trim();
     
     // Check if position is Area Manager
     return (
-      positionName === "area manager" ||
-      positionName.includes("area manager")
+      positionName === "AREA MANAGER" ||
+      positionName.includes("AREA MANAGER")
     );
   };
 
-  const isHO = isEvaluatorHO();
-  const isAreaMgr = isEvaluatorAreaManager();
+  const isHO = isEmployeeHO();
+  const isAreaMgr = isEmployeeAreaManager();
   
-  // Determine base steps based on evaluator type and evaluation type
-  // - HO Area Managers: always use branchEvaluationSteps
-  // - Branch rankNfile: use branchRankNfileSteps (Step2 with only "Job Targets", not 7 rows)
-  // - Otherwise: use custom steps if provided, or default steps
+  // Determine base steps based on employee's branch and evaluation type
+  // - If employee is HO: evaluationType is for HO (rankNfile or basic) - no Customer Service
+  // - If employee is NOT HO: evaluationType is for Branch (default) - with Customer Service
+  // - Branch rankNfile: use branchRankNfileSteps (Step2 with only "Job Targets", Customer Service, NO Managerial Skills)
   const baseSteps = (() => {
-    // HO Area Managers always use branch evaluation steps (override custom steps)
-    if (isHO && isAreaMgr) {
-      return branchEvaluationSteps;
-    }
-    
     // Branch rankNfile evaluations use branchRankNfileSteps (Step2 with only "Job Targets", Customer Service, NO Managerial Skills)
-    // This is different from HO rankNfile which has no Customer Service
     if (!isHO && evaluationType === 'rankNfile') {
       return branchRankNfileSteps;
     }
@@ -128,14 +134,14 @@ export default function EvaluationForm({
     return customSteps || defaultSteps;
   })();
   
-  // Filter steps based on HO status and evaluation type
-  // For HO Area Managers: use branchEvaluationSteps (already set in baseSteps), keep Step 7
-  // For other HO evaluators: remove Step 7 (Customer Service)
-  // For custom steps (non-Area Manager): use them as-is
+  // Filter steps based on employee's branch and evaluation type
+  // - If employee is HO: remove Step 7 (Customer Service) - HO evaluations don't have Customer Service
+  // - If employee is NOT HO: keep Step 7 (Customer Service) - Branch evaluations have Customer Service
+  // - Area Managers from HO still use branch evaluation steps (with Customer Service)
   const filteredSteps = (() => {
-    // HO Area Managers should always use branchEvaluationSteps (includes Step 7)
+    // Area Managers from HO should use branch evaluation steps (includes Step 7)
     if (isHO && isAreaMgr) {
-      return baseSteps; // Already set to branchEvaluationSteps, includes Step 7
+      return baseSteps; // Use branch evaluation steps, includes Step 7
     }
     
     // For other cases with custom steps, use them as-is
@@ -143,7 +149,9 @@ export default function EvaluationForm({
       return customSteps;
     }
     
-    // Default behavior: remove Step 7 for HO evaluators (but not for HO Area Managers)
+    // Default behavior: 
+    // - If employee is HO (and not Area Manager): remove Step 7 (Customer Service) - HO evaluations
+    // - If employee is NOT HO: keep Step 7 (Customer Service) - Branch evaluations
     return isHO ? baseSteps.filter(step => step.id !== 7) : baseSteps;
   })();
   
@@ -387,56 +395,26 @@ export default function EvaluationForm({
           hasValidCoverageDates
         );
       case 2: // Quality of Work
-        // Check if evaluator is HO
-        const isEvaluatorHO = () => {
-          if (!user?.branches) return false;
-          
-          // Handle branches as array
-          if (Array.isArray(user.branches)) {
-            const branch = user.branches[0];
-            if (branch) {
-              const branchName = branch.branch_name?.toUpperCase() || "";
-              const branchCode = branch.branch_code?.toUpperCase() || "";
-              return (
-                branchName === "HO" || 
-                branchCode === "HO" || 
-                branchName.includes("HEAD OFFICE") ||
-                branchCode.includes("HEAD OFFICE") ||
-                branchName === "HEAD OFFICE" ||
-                branchCode === "HEAD OFFICE"
-              );
-            }
+        // Check if employee being evaluated is HO (not the evaluator)
+        // Use the existing isEmployeeHO function, but also check evaluationType as fallback
+        const isEmployeeHOForStep2 = () => {
+          // If evaluationType is 'rankNfile' or 'basic', employee is definitely HO
+          if (evaluationType === 'rankNfile' || evaluationType === 'basic') {
+            return true;
           }
           
-          // Handle branches as object
-          if (typeof user.branches === 'object') {
-            const branchName = (user.branches as any)?.branch_name?.toUpperCase() || "";
-            const branchCode = (user.branches as any)?.branch_code?.toUpperCase() || "";
-            return (
-              branchName === "HO" || 
-              branchCode === "HO" || 
-              branchName.includes("HEAD OFFICE") ||
-              branchCode.includes("HEAD OFFICE") ||
-              branchName === "HEAD OFFICE" ||
-              branchCode === "HEAD OFFICE"
-            );
-          }
-          
-          return false;
+          // Otherwise, check employee's branch
+          return isEmployeeHO();
         };
         
-        const isEvaluatorAreaManager = () => {
-          if (!user?.positions) return false;
-          const position = user.positions;
-          const positionLabel = typeof position === 'string' 
-            ? position.toUpperCase() 
-            : (position as any)?.label?.toUpperCase() || '';
-          return positionLabel === 'AREA MANAGER' || positionLabel.includes('AREA MANAGER');
+        // Check if employee is Area Manager or Branch Manager/Supervisor
+        const isEmployeeAreaManagerForStep2 = () => {
+          return isEmployeeAreaManager();
         };
         
-        const isBranchManagerOrSupervisor = () => {
-          if (!user?.positions) return false;
-          const position = user.positions;
+        const isEmployeeBranchManagerOrSupervisorForStep2 = () => {
+          if (!employee?.positions) return false;
+          const position = employee.positions;
           const positionLabel = typeof position === 'string' 
             ? position.toUpperCase() 
             : (position as any)?.label?.toUpperCase() || '';
@@ -444,20 +422,21 @@ export default function EvaluationForm({
             positionLabel === 'BRANCH MANAGER' || 
             positionLabel.includes('BRANCH MANAGER') ||
             positionLabel === 'BRANCH SUPERVISOR' || 
-            positionLabel.includes('BRANCH SUPERVISOR')
+            positionLabel.includes('BRANCH SUPERVISOR') ||
+            (positionLabel.includes('MANAGER') && !positionLabel.includes('AREA MANAGER'))
           );
         };
         
-        const isHO = isEvaluatorHO();
-        const isAreaMgr = isEvaluatorAreaManager();
-        const isBranchMgrOrSup = isBranchManagerOrSupervisor();
+        const isHO = isEmployeeHOForStep2();
+        const isAreaMgr = isEmployeeAreaManagerForStep2();
+        const isBranchMgrOrSup = isEmployeeBranchManagerOrSupervisorForStep2();
         
         // Determine if job targets should be shown (same logic as newStep2.tsx)
         // For BranchRankNfile, showJobTargets is false (uses Step2, not newStep2)
         const showJobTargets = isAreaMgr || (isBranchMgrOrSup && !isHO);
         
         // Check if this is a BranchRankNfile evaluation (uses Step2, not newStep2)
-        // BranchRankNfile: evaluationType === 'rankNfile' && !isHO
+        // BranchRankNfile: evaluationType === 'rankNfile' && !isHO (employee is NOT HO)
         const isBranchRankNfile = !isHO && evaluationType === 'rankNfile';
         
         // Base Quality of Work scores (always required)
@@ -492,10 +471,11 @@ export default function EvaluationForm({
         ) : true; // If job targets shouldn't be shown, don't require them
         
         // qualityOfWorkScore5 (single "Job Targets" row) is required if:
-        // 1. Evaluator is HO (always skip - HO doesn't see this)
+        // 1. Employee is HO (always skip - HO doesn't see this row in Step2)
         // 2. OR showJobTargets is true (skip - they use the 7 detailed job targets instead)
-        // 3. OR for BranchRankNfile (not HO, rankNfile type) - REQUIRED (uses Step2 which shows qualityOfWorkScore5)
-        // 4. OR for any non-HO evaluator not using the 7 detailed job targets - REQUIRED
+        // 3. OR for BranchRankNfile (employee NOT HO, rankNfile type) - REQUIRED (uses Step2 which shows qualityOfWorkScore5)
+        // 4. OR for any non-HO employee not using the 7 detailed job targets - REQUIRED
+        // For HO employees (rankNfile or basic evaluationType), qualityOfWorkScore5 is NOT required
         const hasQualityOfWorkScore5 = isHO || showJobTargets || (form.qualityOfWorkScore5 && form.qualityOfWorkScore5 !== 0);
         
         // For BranchRankNfile specifically, ensure qualityOfWorkScore5 is filled
@@ -544,8 +524,31 @@ export default function EvaluationForm({
           form.ethicalScore4 &&
           form.ethicalScore4 !== 0
         );
-      case 7: // Customer Service
-        // Check if evaluator is HO - Step 7 is not applicable for HO
+      case 7: // Could be Customer Service or Managerial Skills depending on evaluation type
+        // Check the actual step ID and title to determine what step 7 is
+        const currentStepId_Step7 = getCurrentStepId();
+        const currentStepConfig_Step7 = filteredSteps[currentStep - 1];
+        
+        // If step 7 is Managerial Skills (for BasicHo: id: 7, title: "Managerial Skills"), validate all managerial skills scores
+        if (currentStepId_Step7 === 7 && currentStepConfig_Step7?.title === "Managerial Skills") {
+          return (
+            form.managerialSkillsScore1 &&
+            form.managerialSkillsScore1 !== 0 &&
+            form.managerialSkillsScore2 &&
+            form.managerialSkillsScore2 !== 0 &&
+            form.managerialSkillsScore3 &&
+            form.managerialSkillsScore3 !== 0 &&
+            form.managerialSkillsScore4 &&
+            form.managerialSkillsScore4 !== 0 &&
+            form.managerialSkillsScore5 &&
+            form.managerialSkillsScore5 !== 0 &&
+            form.managerialSkillsScore6 &&
+            form.managerialSkillsScore6 !== 0
+          );
+        }
+        
+        // If step 7 is Customer Service (for branch evaluations), validate customer service scores
+        // Check if evaluator is HO - Step 7 Customer Service is not applicable for HO
         const isEvaluatorHO_Step7 = () => {
           if (!user?.branches) return false;
           
@@ -585,7 +588,7 @@ export default function EvaluationForm({
         
         const isHO_Step7 = isEvaluatorHO_Step7();
         
-        // Step 7 is always valid for HO evaluators (not applicable)
+        // Step 7 Customer Service is always valid for HO evaluators (not applicable)
         if (isHO_Step7) {
           return true;
         }

@@ -18,6 +18,7 @@ interface Step2Props {
   updateDataAction: (updates: Partial<EvaluationPayload>) => void;
   employee?: User | null;
   evaluationType?: 'rankNfile' | 'basic' | 'default'; // Optional: evaluation type to determine HO context
+  forceShowJobTargets?: boolean; // Optional: force show job targets (for BranchManagerEvaluationForm)
 }
 
 // Score Dropdown Component
@@ -95,16 +96,20 @@ function ScoreDropdown({
   );
 }
 
-export default function Step2({ data, updateDataAction, evaluationType }: Step2Props) {
+export default function Step2({ data, updateDataAction, employee, evaluationType, forceShowJobTargets = false }: Step2Props) {
   const { user } = useAuth();
   
-  // Check if evaluator's branch is HO (Head Office)
-  const isEvaluatorHO = () => {
-    if (!user?.branches) return false;
+  // Check if employee being evaluated is HO (Head Office)
+  // This determines the evaluationType based on the employee being evaluated, not the evaluator
+  const isEmployeeHO = () => {
+    if (!employee?.branches) {
+      // Fallback: if evaluationType is 'rankNfile' or 'basic', it's definitely an HO evaluation
+      return evaluationType === 'rankNfile' || evaluationType === 'basic';
+    }
     
     // Handle branches as array
-    if (Array.isArray(user.branches)) {
-      const branch = user.branches[0];
+    if (Array.isArray(employee.branches)) {
+      const branch = employee.branches[0];
       if (branch) {
         const branchName = branch.branch_name?.toUpperCase() || "";
         const branchCode = branch.branch_code?.toUpperCase() || "";
@@ -120,9 +125,9 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
     }
     
     // Handle branches as object
-    if (typeof user.branches === 'object') {
-      const branchName = (user.branches as any)?.branch_name?.toUpperCase() || "";
-      const branchCode = (user.branches as any)?.branch_code?.toUpperCase() || "";
+    if (typeof employee.branches === 'object') {
+      const branchName = (employee.branches as any)?.branch_name?.toUpperCase() || "";
+      const branchCode = (employee.branches as any)?.branch_code?.toUpperCase() || "";
       return (
         branchName === "HO" || 
         branchCode === "HO" || 
@@ -133,57 +138,68 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
       );
     }
     
-    return false;
+    // Fallback: check if branch field exists directly
+    if ((employee as any).branch) {
+      const branchName = String((employee as any).branch).toUpperCase();
+      return (
+        branchName === "HO" || 
+        branchName === "HEAD OFFICE" ||
+        branchName.includes("HEAD OFFICE") ||
+        branchName.includes("/HO")
+      );
+    }
+    
+    // Final fallback: if evaluationType is 'rankNfile' or 'basic', it's definitely an HO evaluation
+    return evaluationType === 'rankNfile' || evaluationType === 'basic';
   };
 
-  // Check if evaluator is Branch Manager or Branch Supervisor
-  const isBranchManagerOrSupervisor = () => {
-    if (!user?.positions) return false;
+  // Check if employee is Branch Manager or Branch Supervisor
+  const isEmployeeBranchManagerOrSupervisor = () => {
+    if (!employee?.positions) return false;
     
     // Get position name from various possible fields
     const positionName = (
-      user.positions?.label || 
-      user.positions?.name || 
-      (user as any).position ||
+      employee.positions?.label || 
+      employee.positions?.name || 
+      (employee as any).position ||
       ""
-    ).toLowerCase().trim();
+    ).toUpperCase().trim();
     
-    // Check if position is Branch Manager or Branch Supervisor
-    return (
-      positionName === "branch manager" ||
-      positionName === "branch supervisor" ||
-      positionName.includes("branch manager") ||
-      positionName.includes("branch supervisor")
-    );
+    // Check if position is any Manager (excluding Area Manager) or Supervisor
+    const isManager = positionName.includes('MANAGER') && !positionName.includes('AREA MANAGER');
+    const isSupervisor = positionName.includes('SUPERVISOR');
+    
+    return isManager || isSupervisor;
   };
 
-  // Check if evaluator is Area Manager
-  const isAreaManager = () => {
-    if (!user?.positions) return false;
+  // Check if employee is Area Manager
+  const isEmployeeAreaManager = () => {
+    if (!employee?.positions) return false;
     
     // Get position name from various possible fields
     const positionName = (
-      user.positions?.label || 
-      user.positions?.name || 
-      (user as any).position ||
+      employee.positions?.label || 
+      employee.positions?.name || 
+      (employee as any).position ||
       ""
-    ).toLowerCase().trim();
+    ).toUpperCase().trim();
     
     // Check if position is Area Manager
     return (
-      positionName === "area manager" ||
-      positionName.includes("area manager")
+      positionName === "AREA MANAGER" ||
+      positionName.includes("AREA MANAGER")
     );
   };
 
+  // Determine if this is an HO evaluation based on employee's branch
   // If evaluationType is 'rankNfile' or 'basic', it's definitely an HO evaluation
-  // Otherwise, check the evaluator's branch
-  const isHO = evaluationType === 'rankNfile' || evaluationType === 'basic' || isEvaluatorHO();
+  const isHO = isEmployeeHO();
   
-  // Show Job Targets if evaluator is Branch Manager, Branch Supervisor, or Area Manager
-  // For Area Managers: they should see Job Targets even if from HO (since they do branch evaluations)
-  // For Branch Managers/Supervisors: only show if not HO
-  const showJobTargets = isAreaManager() || (isBranchManagerOrSupervisor() && !isHO);
+  // Show Job Targets if:
+  // 1. forceShowJobTargets is true (for BranchManagerEvaluationForm)
+  // 2. OR employee is Area Manager
+  // 3. OR employee is Branch Manager/Supervisor and not HO
+  const showJobTargets = forceShowJobTargets || isEmployeeAreaManager() || (isEmployeeBranchManagerOrSupervisor() && !isHO);
   
   // Debug: Log to verify evaluationType is being passed
   // console.log('Step2 - evaluationType:', evaluationType, 'isHO:', isHO);

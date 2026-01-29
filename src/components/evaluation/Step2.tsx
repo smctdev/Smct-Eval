@@ -95,16 +95,20 @@ function ScoreDropdown({
   );
 }
 
-export default function Step2({ data, updateDataAction, evaluationType }: Step2Props) {
+export default function Step2({ data, updateDataAction, employee, evaluationType }: Step2Props) {
   const { user } = useAuth();
   
-  // Check if evaluator's branch is HO (Head Office)
-  const isEvaluatorHO = () => {
-    if (!user?.branches) return false;
+  // Check if employee being evaluated is HO (Head Office)
+  // This determines the evaluationType based on the employee being evaluated, not the evaluator
+  const isEmployeeHO = () => {
+    if (!employee?.branches) {
+      // Fallback: if evaluationType is 'rankNfile' or 'basic', it's definitely an HO evaluation
+      return evaluationType === 'rankNfile' || evaluationType === 'basic';
+    }
     
     // Handle branches as array
-    if (Array.isArray(user.branches)) {
-      const branch = user.branches[0];
+    if (Array.isArray(employee.branches)) {
+      const branch = employee.branches[0];
       if (branch) {
         const branchName = branch.branch_name?.toUpperCase() || "";
         const branchCode = branch.branch_code?.toUpperCase() || "";
@@ -120,9 +124,9 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
     }
     
     // Handle branches as object
-    if (typeof user.branches === 'object') {
-      const branchName = (user.branches as any)?.branch_name?.toUpperCase() || "";
-      const branchCode = (user.branches as any)?.branch_code?.toUpperCase() || "";
+    if (typeof employee.branches === 'object') {
+      const branchName = (employee.branches as any)?.branch_name?.toUpperCase() || "";
+      const branchCode = (employee.branches as any)?.branch_code?.toUpperCase() || "";
       return (
         branchName === "HO" || 
         branchCode === "HO" || 
@@ -133,12 +137,24 @@ export default function Step2({ data, updateDataAction, evaluationType }: Step2P
       );
     }
     
-    return false;
+    // Fallback: check if branch field exists directly
+    if ((employee as any).branch) {
+      const branchName = String((employee as any).branch).toUpperCase();
+      return (
+        branchName === "HO" || 
+        branchName === "HEAD OFFICE" ||
+        branchName.includes("HEAD OFFICE") ||
+        branchName.includes("/HO")
+      );
+    }
+    
+    // Final fallback: if evaluationType is 'rankNfile' or 'basic', it's definitely an HO evaluation
+    return evaluationType === 'rankNfile' || evaluationType === 'basic';
   };
 
-  // Check if evaluator is HO - for branch rankNfile, evaluationType can be 'rankNfile' but evaluator is NOT HO
-  // Only treat as HO if evaluator's branch is actually HO, not based on evaluationType alone
-  const isHO = isEvaluatorHO();
+  // Determine if this is an HO evaluation based on employee's branch
+  // If evaluationType is 'rankNfile' or 'basic', it's definitely an HO evaluation
+  const isHO = isEmployeeHO();
   
   // Debug: Log to verify evaluationType is being passed
   // console.log('Step2 - evaluationType:', evaluationType, 'isHO:', isHO);

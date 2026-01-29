@@ -1269,6 +1269,7 @@ export default function ViewResultsModal({
   };
 
   const isBranchEmp = isEmployeeBranch();
+  const isHOEmp = !isBranchEmp; // HO employee if NOT branch employee
 
   // Check if evaluator is Area Manager (from HO or branch)
   const isEvaluatorAreaManager = () => {
@@ -1310,6 +1311,16 @@ export default function ViewResultsModal({
     evaluationType = 'rankNfile'; // RankNfile HO - no Customer Service, no Managerial Skills
   } else {
     evaluationType = 'default'; // Default - has Customer Service
+  }
+  
+  // For HO employees, force evaluationType to 'basic' or 'rankNfile' based on Managerial Skills
+  // This ensures Customer Service is never shown for HO employees
+  if (isHOEmp) {
+    if (hasManagerialSkills) {
+      evaluationType = 'basic'; // HO with Managerial Skills
+    } else {
+      evaluationType = 'rankNfile'; // HO without Managerial Skills
+    }
   }
 
   // Use stored rating from backend if available to match evaluation records table
@@ -3054,8 +3065,8 @@ export default function ViewResultsModal({
                 </Card>
               )}
 
-              {/* Step 7: Customer Service - Only show for default evaluations */}
-              {evaluationType === 'default' && submission.customer_services && (
+              {/* Step 7: Customer Service - Only show for default evaluations and branch employees (NOT HO) */}
+              {evaluationType === 'default' && submission.customer_services && isBranchEmp && (
                 <Card className="shadow-md hide-in-print">
                   <CardHeader className="bg-teal-50 border-b border-teal-200">
                     <CardTitle className="text-xl font-semibold text-teal-900">
@@ -3681,8 +3692,8 @@ export default function ViewResultsModal({
                                 </tr>
                               )}
 
-                              {/* Customer Service - Only for Default evaluations */}
-                              {evaluationType === 'default' && submission.customer_services && (
+                              {/* Customer Service - Only for Default evaluations and branch employees (NOT HO) */}
+                              {evaluationType === 'default' && submission.customer_services && isBranchEmp && (
                                 <tr>
                                   <td className="border-2 border-gray-400 px-4 py-3 text-sm text-gray-700 font-medium">
                                     Customer Service

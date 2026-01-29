@@ -28,6 +28,8 @@ import EvaluationTypeModal from "@/components/EvaluationTypeModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import EvaluationForm from "@/components/evaluation";
 import BranchEvaluationForm from "@/components/evaluation/BranchEvaluationForm";
+import BranchRankNfileEvaluationForm from "@/components/evaluation/BranchRankNfileEvaluationForm";
+import BranchManagerEvaluationForm from "@/components/evaluation/BranchManagerEvaluationForm";
 import RankNfileHo from "@/components/evaluation/RankNfileHo";
 import BasicHo from "@/components/evaluation/BasicHo";
 import EvaluationsPagination from "@/components/paginationComponent";
@@ -36,67 +38,54 @@ import ViewEmployeeModal from "@/components/ViewEmployeeModal";
 export default function EmployeesTab() {
   const { user } = useAuth();
   
-  // Check if evaluator's branch is HO (Head Office)
-  const isEvaluatorHO = () => {
-    if (!user?.branches) return false;
+  // Helper function to check if employee is HO (Head Office)
+  // This determines the evaluationType based on the employee being evaluated, not the evaluator
+  const isEmployeeHO = (employee: User | null): boolean => {
+    if (!employee?.branches) return false;
     
     // Handle branches as array
-    if (Array.isArray(user.branches)) {
-      const branch = user.branches[0];
+    if (Array.isArray(employee.branches)) {
+      const branch = employee.branches[0];
       if (branch) {
         const branchName = branch.branch_name?.toUpperCase() || "";
         const branchCode = branch.branch_code?.toUpperCase() || "";
-        return branchName === "HO" || branchCode === "HO" || branchName.includes("HEAD OFFICE");
+        return (
+          branchName === "HO" || 
+          branchCode === "HO" || 
+          branchName.includes("HEAD OFFICE") ||
+          branchCode.includes("HEAD OFFICE") ||
+          branchName === "HEAD OFFICE" ||
+          branchCode === "HEAD OFFICE"
+        );
       }
     }
     
     // Handle branches as object
-    if (typeof user.branches === 'object') {
-      const branchName = (user.branches as any)?.branch_name?.toUpperCase() || "";
-      const branchCode = (user.branches as any)?.branch_code?.toUpperCase() || "";
-      return branchName === "HO" || branchCode === "HO" || branchName.includes("HEAD OFFICE");
+    if (typeof employee.branches === 'object') {
+      const branchName = (employee.branches as any)?.branch_name?.toUpperCase() || "";
+      const branchCode = (employee.branches as any)?.branch_code?.toUpperCase() || "";
+      return (
+        branchName === "HO" || 
+        branchCode === "HO" || 
+        branchName.includes("HEAD OFFICE") ||
+        branchCode.includes("HEAD OFFICE") ||
+        branchName === "HEAD OFFICE" ||
+        branchCode === "HEAD OFFICE"
+      );
+    }
+    
+    // Fallback: check if branch field exists directly
+    if ((employee as any).branch) {
+      const branchName = String((employee as any).branch).toUpperCase();
+      return (
+        branchName === "HO" || 
+        branchName === "HEAD OFFICE" ||
+        branchName.includes("HEAD OFFICE") ||
+        branchName.includes("/HO")
+      );
     }
     
     return false;
-  };
-
-  const isHO = isEvaluatorHO();
-  
-  // Check if employee being evaluated is Area Manager with HO branch
-  const isEmployeeAreaManagerWithHO = (employee: User | null): boolean => {
-    if (!employee) return false;
-    
-    // Check position - look for "Area Manager" in various possible fields
-    const positionName = (
-      employee.positions?.label || 
-      employee.positions?.name || 
-      (employee as any).position ||
-      ""
-    ).toLowerCase().trim();
-    
-    const isAreaManager = positionName === "area manager" || positionName.includes("area manager");
-    
-    if (!isAreaManager) return false;
-    
-    // Check branch - look for "HO" in various possible fields
-    let branchName = "";
-    if (employee.branches) {
-      if (Array.isArray(employee.branches)) {
-        branchName = (employee.branches[0]?.branch_name || employee.branches[0]?.name || "").toUpperCase();
-      } else if (typeof employee.branches === 'object') {
-        branchName = ((employee.branches as any)?.branch_name || (employee.branches as any)?.name || "").toUpperCase();
-      }
-    } else if ((employee as any).branch) {
-      branchName = String((employee as any).branch).toUpperCase();
-    }
-    
-    const isHOBranch = 
-      branchName === "HO" || 
-      branchName === "HEAD OFFICE" ||
-      branchName.includes("HEAD OFFICE") ||
-      branchName.includes("HO");
-    
-    return isAreaManager && isHOBranch;
   };
   
   //refreshing state
@@ -382,15 +371,15 @@ export default function EmployeesTab() {
               <div className="flex items-center gap-3 flex-wrap">
                 <Badge
                   variant="outline"
-                  className="bg-green-100 text-green-800 hover:bg-green-200 border-green-300"
+                  className="bg-green-700 text-white hover:bg-green-800 border-green-700"
                 >
-                  ✨ New Added (≤30min)
+                  ✨ New Added 
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300"
+                  className="bg-blue-600 text-white hover:bg-blue-800 border-blue-600"
                 >
-                  🕐 Recently Added (&gt;30min)
+                  🕐 Recently Added 
                 </Badge>
               </div>
             </div>
@@ -717,6 +706,7 @@ export default function EmployeesTab() {
             ? `${selectedEmployeeForEvaluation?.fname || ""} ${selectedEmployeeForEvaluation?.lname || ""}`.trim()
             : ""
         }
+        employee={selectedEmployeeForEvaluation}
       />
 
       <Dialog
@@ -732,7 +722,9 @@ export default function EmployeesTab() {
         <DialogContent className="max-w-7xl max-h-[101vh] overflow-hidden p-0 evaluation-container">
           {selectedEmployeeForEvaluation && evaluationType === "employee" && (
             <>
-              {isHO && !isEmployeeAreaManagerWithHO(selectedEmployeeForEvaluation) ? (
+              {/* If employee is HO, use HO evaluation forms (RankNfileHo) */}
+              {/* If employee is NOT HO, use BranchEvaluationForm which routes correctly */}
+              {isEmployeeHO(selectedEmployeeForEvaluation) ? (
                 <RankNfileHo
                   employee={selectedEmployeeForEvaluation}
                   onCloseAction={() => {
@@ -744,19 +736,21 @@ export default function EmployeesTab() {
               ) : (
                 <BranchEvaluationForm
                   employee={selectedEmployeeForEvaluation}
-                  evaluationType="rankNfile"
                   onCloseAction={() => {
                     setIsEvaluationModalOpen(false);
                     setSelectedEmployee(null);
                     setEvaluationType(null);
                   }}
+                  evaluationType="rankNfile"
                 />
               )}
             </>
           )}
           {selectedEmployeeForEvaluation && evaluationType === "manager" && (
             <>
-              {isHO && !isEmployeeAreaManagerWithHO(selectedEmployeeForEvaluation) ? (
+              {/* If employee is HO, use HO evaluation forms (BasicHo) */}
+              {/* If employee is NOT HO (Branch), use BranchManagerEvaluationForm directly */}
+              {isEmployeeHO(selectedEmployeeForEvaluation) ? (
                 <BasicHo
                   employee={selectedEmployeeForEvaluation}
                   onCloseAction={() => {
@@ -766,13 +760,14 @@ export default function EmployeesTab() {
                   }}
                 />
               ) : (
-                <BranchEvaluationForm
+                <BranchManagerEvaluationForm
                   employee={selectedEmployeeForEvaluation}
                   onCloseAction={() => {
                     setIsEvaluationModalOpen(false);
                     setSelectedEmployee(null);
                     setEvaluationType(null);
                   }}
+                  evaluationType="default"
                 />
               )}
             </>
