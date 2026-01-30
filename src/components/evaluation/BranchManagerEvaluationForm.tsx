@@ -205,10 +205,7 @@ export default function BranchManagerEvaluationForm({
         return "Please complete all required fields";
       case 2:
         if (!form.qualityOfWorkScore1 || form.qualityOfWorkScore1 === 0) {
-          return "Please complete all Quality of Work scores";
-        }
-        if (!form.jobTargetMotorcyclesScore || form.jobTargetMotorcyclesScore === 0) {
-          return "Please complete all Job Target scores";
+          return "Please complete all Quality of Work scores (Job Targets are optional)";
         }
         return "Please complete all required fields";
       case 3:
@@ -304,6 +301,7 @@ export default function BranchManagerEvaluationForm({
         );
       case 2: // Quality of Work - Branch Manager/Supervisor specific
         // Base Quality of Work scores (always required)
+        // The 7 job target scores are optional - user can choose to fill them or not
         const hasBaseScores = (
           form.qualityOfWorkScore1 &&
           form.qualityOfWorkScore1 !== 0 &&
@@ -315,25 +313,10 @@ export default function BranchManagerEvaluationForm({
           form.qualityOfWorkScore4 !== 0
         );
         
-        // All 7 detailed job target scores are REQUIRED for Branch Managers/Supervisors
-        const hasJobTargetScores = (
-          form.jobTargetMotorcyclesScore &&
-          form.jobTargetMotorcyclesScore !== 0 &&
-          form.jobTargetAppliancesScore &&
-          form.jobTargetAppliancesScore !== 0 &&
-          form.jobTargetCarsScore &&
-          form.jobTargetCarsScore !== 0 &&
-          form.jobTargetTriWheelersScore &&
-          form.jobTargetTriWheelersScore !== 0 &&
-          form.jobTargetCollectionScore &&
-          form.jobTargetCollectionScore !== 0 &&
-          form.jobTargetSparepartsLubricantsScore &&
-          form.jobTargetSparepartsLubricantsScore !== 0 &&
-          form.jobTargetShopIncomeScore &&
-          form.jobTargetShopIncomeScore !== 0
-        );
+        // Job target scores are optional - no validation required
+        // Only the 4 base Quality of Work scores are required to proceed
         
-        return hasBaseScores && hasJobTargetScores;
+        return hasBaseScores;
       case 3: // Adaptability
         return (
           form.adaptabilityScore1 &&
@@ -883,20 +866,71 @@ export default function BranchManagerEvaluationForm({
       </Dialog>
 
       {/* Success Dialog */}
-      <Dialog open={showSuccessDialog} onOpenChangeAction={setShowSuccessDialog}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog
+        open={showSuccessDialog}
+        onOpenChangeAction={setShowSuccessDialog}
+      >
+        <DialogContent
+          className="max-w-md m-8 success-dialog"
+          style={{
+            animation: "dialogPopup 0.3s ease-out",
+          }}
+        >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-600">
-              <AlertTriangle className="h-5 w-5" />
-              Evaluation Submitted Successfully
+            <DialogTitle className="text-lg font-semibold text-gray-900 flex items-center justify-center gap-2">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-green-600 check-animation"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  style={{
+                    strokeDasharray: "20",
+                    strokeDashoffset: "20",
+                    animation: "drawCheck 0.6s ease-in-out 0.3s forwards",
+                  }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              Evaluation Submitted Successfully!
             </DialogTitle>
           </DialogHeader>
-          <p className="py-4">
-            The evaluation has been submitted successfully. The employee will be
-            notified.
-          </p>
-          <DialogFooter>
-            <Button onClick={handleSuccessDialogClose} className="w-full">
+          <div className="py-4">
+            <div className="bg-green-50 p-4 rounded-lg mb-4 success-message">
+              <p className="text-gray-700 text-center">
+                🎉 Your evaluation has been submitted successfully!
+                <br />
+                The employee can now view their results in their dashboard.
+              </p>
+            </div>
+            <div className="text-sm text-gray-600 text-center">
+              <p>
+                <strong>Employee:</strong>{" "}
+                {employee?.fname + " " + employee?.lname}
+              </p>
+              <p>
+                <strong>Submitted:</strong>{" "}
+                {new Date().toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex justify-center">
+            <Button
+              onClick={handleSuccessDialogClose}
+              className="px-8 py-2 bg-red-600 text-white hover:bg-red-700 hover:text-white cursor-pointer hover:scale-110 transition-transform duration-200"
+            >
               Close
             </Button>
           </DialogFooter>

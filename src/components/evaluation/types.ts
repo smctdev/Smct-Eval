@@ -29,7 +29,7 @@ interface EvaluationPayload {
   qualityOfWorkScore3: number;
   qualityOfWorkScore4: number;
   qualityOfWorkScore5: number;
-  // Job Targets scores (replacing single Job Targets with multiple target types)
+  // Job Targets scores (optional - user can choose to fill them or not)
   jobTargetMotorcyclesScore?: number;
   jobTargetAppliancesScore?: number;
   jobTargetCarsScore?: number;
@@ -116,6 +116,7 @@ interface EvaluationPayload {
   managerialSkillsExplanation6: string;
   created_at: string;
 }
+
 export type { EvaluationPayload };
 
 import React from "react";

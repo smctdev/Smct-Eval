@@ -124,9 +124,9 @@ export default function UserManagementTab() {
     if ((employee as any).branch) {
       const branchName = String((employee as any).branch).toUpperCase();
       return (
-        branchName === "HO" || 
-        branchName === "HEAD OFFICE" ||
-        branchName.includes("HEAD OFFICE") ||
+      branchName === "HO" || 
+      branchName === "HEAD OFFICE" ||
+      branchName.includes("HEAD OFFICE") ||
         branchName.includes("/HO")
       );
     }

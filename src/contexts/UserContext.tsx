@@ -171,6 +171,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
     try {
       await apiService.logout();
+      
+      // Clear welcome modal session storage on logout so it shows again on next login
+      Object.keys(sessionStorage).forEach(key => {
+        if (key.startsWith('welcomeModal_')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+      
       await refreshUser();
       router.push("/");
     } catch (e) {

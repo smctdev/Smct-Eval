@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useDialogAnimation } from '@/hooks/useDialogAnimation';
-import { BarChart3, FileText, History, CheckCircle2, Eye, TrendingUp, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BarChart3, FileText, History, CheckCircle2, Eye, TrendingUp, Calendar, ChevronLeft, ChevronRight, Sparkles, ArrowRight } from 'lucide-react';
 import {
   Carousel,
   CarouselContent,
@@ -24,6 +24,7 @@ export function EmployeeDashboardGuideModal({ isOpen, onCloseAction }: EmployeeD
   const [api, setApi] = useState<CarouselApi>();
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
+  const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     if (!api) {
@@ -36,8 +37,17 @@ export function EmployeeDashboardGuideModal({ isOpen, onCloseAction }: EmployeeD
     api.on("select", () => {
       setCanScrollPrev(api.canScrollPrev());
       setCanScrollNext(api.canScrollNext());
+      setCurrent(api.selectedScrollSnap());
     });
   }, [api]);
+
+  // Reset to first slide when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      api?.scrollTo(0);
+      setCurrent(0);
+    }
+  }, [isOpen, api]);
 
   return (
     <>
@@ -76,6 +86,48 @@ export function EmployeeDashboardGuideModal({ isOpen, onCloseAction }: EmployeeD
         <div className="flex-1 overflow-y-auto min-h-0">
           <Carousel className="w-full" setApi={setApi}>
           <CarouselContent>
+            {/* Slide 0: Welcome Message */}
+            <CarouselItem>
+              <div className="p-2">
+                <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden">
+                  {/* Blur effect background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-100/30 via-indigo-100/30 to-purple-100/30 backdrop-blur-sm z-0"></div>
+                  {/* Decorative background elements */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                    <div className="absolute top-10 left-10 w-32 h-32 bg-blue-200 rounded-full opacity-20 blur-3xl"></div>
+                    <div className="absolute bottom-10 right-10 w-40 h-40 bg-indigo-200 rounded-full opacity-20 blur-3xl"></div>
+                  </div>
+                  <CardContent className="p-8 relative z-10 flex flex-col items-center justify-center text-center min-h-[400px]">
+                    <div className="mb-6">
+                      <div className="flex items-center justify-center mb-4">
+                        <img
+                          src="/smct.png"
+                          alt="SMCT Logo"
+                          className="h-20 w-auto object-contain"
+                        />
+                      </div>
+                    </div>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                      Welcome to Your Employee Dashboard! 👋
+                    </h2>
+                    <p className="text-lg text-gray-700 mb-2 max-w-2xl">
+                      We're glad you're here! This guide will help you understand how to view and manage your performance evaluations.
+                    </p>
+                    <p className="text-base text-gray-600 mb-8 max-w-xl">
+                      Let's walk through your dashboard together so you can easily access your reviews, approve evaluations, and track your performance.
+                    </p>
+                    <Button
+                      onClick={() => api?.scrollNext()}
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-6 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                    >
+                      Proceed to Guide
+                      <ArrowRight className="w-5 h-5" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </CarouselItem>
+
             {/* Slide 1: Overview Tab */}
             <CarouselItem>
               <div className="p-2">
@@ -286,8 +338,16 @@ export function EmployeeDashboardGuideModal({ isOpen, onCloseAction }: EmployeeD
             {/* Slide 4: Quick Tips */}
             <CarouselItem>
               <div className="p-2">
-                <Card className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200">
-                  <CardContent className="p-6">
+                <Card className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 relative overflow-hidden">
+                  {/* Faded Background Logo - Fixed position, won't scroll */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                    <img
+                      src="/smct.png"
+                      alt="SMCT Logo"
+                      className="w-145 h-145 object-contain opacity-15"
+                    />
+                  </div>
+                  <CardContent className="p-6 relative z-10">
                     <div className="mb-4">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <CheckCircle2 className="w-5 h-5 text-blue-600" />

@@ -112,15 +112,17 @@ export default function EvaluationTypeModal({
                     Basic Evaluation
                   </h3>
                   <p className="text-sm text-gray-600 mb-4">
-                    Comprehensive evaluation for Head Office (HO) users. Assesses
-                    job knowledge, quality of work, adaptability, teamwork,
-                    reliability, ethical behavior, and managerial skills.
-                  </p>
-                  <ul className="text-xs text-gray-500 space-y-1 text-left mb-4">
-                    <li>• Head Office (HO) Evaluation</li>
-                    <li>• 8 evaluation steps</li>
-                    <li>• Includes Managerial Skills assessment</li>
-                  </ul>
+                Comprehensive evaluation designed exclusively for managers. Assesses
+                leadership effectiveness, job knowledge, quality of work, decision-making,
+                adaptability, teamwork, reliability, ethical behavior, and overall
+              managerial performance.
+              </p>
+
+             <ul className="text-xs text-gray-500 space-y-1 text-left mb-4">
+               <li>• Managers Only Evaluation</li>
+             <li>• 8 evaluation steps</li>
+               <li>• Focus on leadership & managerial skills</li>
+               </ul>
                 </div>
                 <Button
                   className="w-full bg-green-600 hover:bg-green-700 text-white group-hover:scale-105 transition-transform cursor-pointer"

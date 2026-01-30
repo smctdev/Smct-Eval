@@ -32,6 +32,8 @@ type Submission = {
   evaluatorApprovedAt: string;
   employeeApprovedAt: string;
   created_at: string;
+  showJobTargetsRows?: boolean; // Toggle state for job targets visibility
+  show_job_targets_rows?: boolean; // Alternative field name (snake_case)
 
   //relations
   job_knowledge: any;
@@ -1348,15 +1350,22 @@ export default function ViewResultsModal({
   const isManagerEvaluation = isEmployeeAreaMgr || isEmployeeBranchMgrOrSup;
   
   // ViewResultsModalBranchManager is ONLY used for Branch Manager evaluations
-  // So we should ALWAYS show the 7 detailed job targets and hide question 5
-  // This component is routed to when: isBranchEmp && isBranchMgrOrSup
-  // So we know both evaluator and employee are Branch Managers/Supervisors
-  const shouldShowDetailedJobTargets = true; // Always true for Branch Manager evaluations
+  // Show the 7 detailed job targets if any of them have data (they're optional fields)
+  const submissionData = submission as any;
+  // Check if any job target scores exist in the submission
+  const hasJobTargetData = 
+    submissionData?.jobTargetMotorcyclesScore || submissionData?.job_target_motorcycles_score ||
+    submissionData?.jobTargetAppliancesScore || submissionData?.job_target_appliances_score ||
+    submissionData?.jobTargetCarsScore || submissionData?.job_target_cars_score ||
+    submissionData?.jobTargetTriWheelersScore || submissionData?.job_target_tri_wheelers_score ||
+    submissionData?.jobTargetCollectionScore || submissionData?.job_target_collection_score ||
+    submissionData?.jobTargetSparepartsLubricantsScore || submissionData?.job_target_spareparts_lubricants_score ||
+    submissionData?.jobTargetShopIncomeScore || submissionData?.job_target_shop_income_score ||
+    // Also check in quality_of_works array for questions 6-12
+    (submission.quality_of_works && Array.isArray(submission.quality_of_works) && 
+     submission.quality_of_works.some((item: any) => item.question_number >= 6 && item.question_number <= 12));
   
-  // Debug: Log to verify we're in Branch Manager component
-  console.log('🔍 ViewResultsModalBranchManager - shouldShowDetailedJobTargets:', shouldShowDetailedJobTargets);
-  console.log('🔍 ViewResultsModalBranchManager - isEvaluatorBranchMgrOrSup:', isEvaluatorBranchMgrOrSup);
-  console.log('🔍 ViewResultsModalBranchManager - isEmployeeBranchMgrOrSup:', isEmployeeBranchMgrOrSup);
+  const shouldShowDetailedJobTargets = hasJobTargetData;
 
   // Determine evaluation type based on submission data
   const hasCustomerService = submission.customer_services && 
@@ -2450,47 +2459,19 @@ export default function ViewResultsModal({
                             const allQualityOfWorks = submission.quality_of_works || [];
                             
                             // Get base quality of work items
-                            // Hide question 5 "Job Targets" if we're showing the 7 detailed job targets
+                            // For Branch Manager evaluations, always hide question 5 "Job Targets"
+                            // If toggle was ON, show 7 detailed job targets (questions 6-12)
+                            // If toggle was OFF, show only base 4 questions (1-4)
                             const qualityOfWorksItems = allQualityOfWorks
                               .filter((item: { question_number: number }) => {
-                                if (shouldShowDetailedJobTargets) {
-                                  // Area Manager or Branch Manager evaluating Branch Manager: show questions 1-4 only (hide question 5 "Job Targets" since they have the 7 detailed rows)
-                                  return item.question_number <= 4;
-                                } else if (isBranchEmp) {
-                                  // Branch employees (not manager): show only questions 1-5
-                                  return item.question_number <= 5;
-                                } else {
-                                  // HO employees: show only questions 1-4 (no Job Targets)
-                                  return item.question_number <= 4;
-                                }
+                                // Always hide question 5 "Job Targets" for Branch Manager evaluations
+                                // Show only questions 1-4 (base Quality of Work items)
+                                return item.question_number <= 4;
                               });
 
                             // For Area Manager or Branch Manager evaluating Branch Manager, add the 7 detailed job targets
                             if (shouldShowDetailedJobTargets) {
                               const sub = submission as any;
-                              
-                              // Debug: Log the entire submission object structure
-                              console.log('🔍 Full submission object:', sub);
-                              console.log('🔍 Submission keys:', Object.keys(sub));
-                              console.log('🔍 quality_of_works array:', allQualityOfWorks);
-                              
-                              // Check for job target fields in all possible locations
-                              const allJobTargetKeys = Object.keys(sub).filter(k => 
-                                k.toLowerCase().includes('jobtarget') || 
-                                k.toLowerCase().includes('motorcycle') ||
-                                k.toLowerCase().includes('appliance') ||
-                                k.toLowerCase().includes('collection') ||
-                                k.toLowerCase().includes('sparepart') ||
-                                k.toLowerCase().includes('shopincome') ||
-                                k.toLowerCase().includes('triwheel') ||
-                                k.toLowerCase().includes('car')
-                              );
-                              console.log('🔍 All job target related keys found:', allJobTargetKeys);
-                              
-                              // Log actual values for debugging
-                              allJobTargetKeys.forEach(key => {
-                                console.log(`🔍 ${key}:`, sub[key]);
-                              });
                               
                               // Helper function to safely get a value from multiple possible field names
                               const getFieldValue = (fieldVariations: string[], defaultValue: any = null) => {
@@ -2536,26 +2517,6 @@ export default function ViewResultsModal({
                                 .filter((item: { question_number: number }) => 
                                   item.question_number >= 6 && item.question_number <= 12
                                 );
-                              
-                              console.log('🔍 ViewResultsModalBranchManager - Found job targets in array:', jobTargetsFromArray.length);
-                              console.log('🔍 ViewResultsModalBranchManager - Question numbers found:', jobTargetsFromArray.map((item: any) => item.question_number));
-                              
-                              // Debug: Log the structure of items 6-12 from the array
-                              console.log('🔍 Job targets from quality_of_works array (6-12):', jobTargetsFromArray);
-                              if (jobTargetsFromArray.length > 0) {
-                                console.log('🔍 First job target item structure:', jobTargetsFromArray[0]);
-                                console.log('🔍 All keys in first job target item:', Object.keys(jobTargetsFromArray[0]));
-                              }
-                              
-                              // Also log ALL quality_of_works items to see their question_numbers
-                              console.log('🔍 All quality_of_works items with question_numbers:', 
-                                allQualityOfWorks.map((item: any) => ({
-                                  question_number: item.question_number,
-                                  score: item.score || item.score_value || item.value,
-                                  comment: item.comment || item.comments || item.comment_text,
-                                  allKeys: Object.keys(item)
-                                }))
-                              );
                               
                               // Create a map of question_number to items from array for quick lookup
                               const arrayMap = new Map(
@@ -2622,13 +2583,6 @@ export default function ViewResultsModal({
                                     arrayItem.quality_of_work_comment ||
                                     '';
                                   
-                                  // Debug logging for Shop Income (question 12)
-                                  if (def.question_number === 12) {
-                                    console.log('🔍 Shop Income (Q12) - Array Item:', arrayItem);
-                                    console.log('🔍 Shop Income (Q12) - Extracted Score:', arrayScore);
-                                    console.log('🔍 Shop Income (Q12) - All arrayItem keys:', Object.keys(arrayItem));
-                                  }
-                                  
                                   // Return array item even if score is 0 (it's the actual stored data)
                                   return {
                                     question_number: def.question_number,
@@ -2641,44 +2595,6 @@ export default function ViewResultsModal({
                                 const score = getNestedFieldValue(def.scoreFields, 0);
                                 const comment = getNestedFieldValue(def.commentFields, '');
                                 
-                                // Debug logging for Shop Income (question 12) when not in array
-                                if (def.question_number === 12) {
-                                  console.log('🔍 Shop Income (Q12) - Not in array, checking direct fields');
-                                  console.log('🔍 Shop Income (Q12) - Score fields checked:', def.scoreFields);
-                                  console.log('🔍 Shop Income (Q12) - Found score:', score);
-                                  console.log('🔍 Shop Income (Q12) - Submission keys:', Object.keys(sub));
-                                  
-                                  // Check each field individually
-                                  def.scoreFields.forEach(field => {
-                                    const value = sub[field];
-                                    if (value !== undefined && value !== null) {
-                                      console.log(`🔍 Shop Income (Q12) - Field "${field}":`, value);
-                                    }
-                                  });
-                                  
-                                  // Check in evaluationData
-                                  if (sub.evaluationData && typeof sub.evaluationData === 'object') {
-                                    console.log('🔍 Shop Income (Q12) - evaluationData keys:', Object.keys(sub.evaluationData));
-                                    def.scoreFields.forEach(field => {
-                                      const value = sub.evaluationData[field];
-                                      if (value !== undefined && value !== null) {
-                                        console.log(`🔍 Shop Income (Q12) - evaluationData["${field}"]:`, value);
-                                      }
-                                    });
-                                  }
-                                  
-                                  // Check the quality_of_works array for question 12
-                                  if (allQualityOfWorks && Array.isArray(allQualityOfWorks)) {
-                                    const q12Item = allQualityOfWorks.find((item: any) => item.question_number === 12);
-                                    if (q12Item) {
-                                      console.log('🔍 Shop Income (Q12) - Found in quality_of_works array:', q12Item);
-                                    } else {
-                                      console.log('🔍 Shop Income (Q12) - NOT found in quality_of_works array');
-                                      console.log('🔍 Shop Income (Q12) - Available question_numbers:', allQualityOfWorks.map((item: any) => item.question_number));
-                                    }
-                                  }
-                                }
-                                
                                 // Return item with score (even if 0, so all rows are shown)
                                 return {
                                   question_number: def.question_number,
@@ -2687,39 +2603,21 @@ export default function ViewResultsModal({
                                 };
                               });
                               
-                              // Always show all 7 job targets for Branch Manager evaluations
-                              console.log('🔍 ViewResultsModalBranchManager - Adding 7 detailed job targets');
-                              console.log('🔍 ViewResultsModalBranchManager - qualityOfWorksItems count:', qualityOfWorksItems.length);
-                              console.log('🔍 ViewResultsModalBranchManager - qualityOfWorksItems question_numbers:', qualityOfWorksItems.map((item: any) => item.question_number));
-                              console.log('🔍 ViewResultsModalBranchManager - jobTargets count:', jobTargets.length);
-                              console.log('🔍 ViewResultsModalBranchManager - jobTargets question_numbers:', jobTargets.map((jt: any) => jt.question_number));
-                              console.log('🔍 ViewResultsModalBranchManager - jobTargets:', jobTargets);
+                              // Filter out job targets that don't have scores (score is 0, null, or undefined)
+                              // Only show rows that have been rated (non-zero scores)
+                              const jobTargetsWithScores = jobTargets.filter((jt: any) => 
+                                jt.score && jt.score !== 0 && jt.score !== null && jt.score !== undefined
+                              );
                               
                               // Verify question 5 is NOT in qualityOfWorksItems
                               const hasQuestion5 = qualityOfWorksItems.some((item: any) => item.question_number === 5);
                               if (hasQuestion5) {
                                 console.error('❌ ERROR: Question 5 is still in qualityOfWorksItems! It should be hidden.');
-                              } else {
-                                console.log('✅ Question 5 correctly hidden from qualityOfWorksItems');
                               }
                               
-                              // Verify we have all 7 job targets (questions 6-12)
-                              const expectedJobTargetNumbers = [6, 7, 8, 9, 10, 11, 12];
-                              const actualJobTargetNumbers = jobTargets.map((jt: any) => jt.question_number).sort((a, b) => a - b);
-                              const missingJobTargets = expectedJobTargetNumbers.filter(num => !actualJobTargetNumbers.includes(num));
-                              if (missingJobTargets.length > 0) {
-                                console.error('❌ ERROR: Missing job targets:', missingJobTargets);
-                              } else {
-                                console.log('✅ All 7 job targets (6-12) are present');
-                              }
-                              
-                              const finalArray = [...qualityOfWorksItems, ...jobTargets];
-                              console.log('🔍 ViewResultsModalBranchManager - Final array count:', finalArray.length);
-                              console.log('🔍 ViewResultsModalBranchManager - Final array question_numbers:', finalArray.map((item: any) => item.question_number));
+                              const finalArray = [...qualityOfWorksItems, ...jobTargetsWithScores];
                               return finalArray;
                             }
-
-                            console.log('🔍 ViewResultsModalBranchManager - NOT showing detailed job targets, returning qualityOfWorksItems only');
                             return qualityOfWorksItems;
                           })().map(
                             (item: {

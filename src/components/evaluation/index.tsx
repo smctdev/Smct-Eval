@@ -451,24 +451,8 @@ export default function EvaluationForm({
           form.qualityOfWorkScore4 !== 0
         );
         
-        // Job Target scores (required only if showJobTargets is true)
-        // For BranchRankNfile, showJobTargets is false, so we don't require the 7 detailed job target scores
-        const hasJobTargetScores = showJobTargets ? (
-          form.jobTargetMotorcyclesScore &&
-          form.jobTargetMotorcyclesScore !== 0 &&
-          form.jobTargetAppliancesScore &&
-          form.jobTargetAppliancesScore !== 0 &&
-          form.jobTargetCarsScore &&
-          form.jobTargetCarsScore !== 0 &&
-          form.jobTargetTriWheelersScore &&
-          form.jobTargetTriWheelersScore !== 0 &&
-          form.jobTargetCollectionScore &&
-          form.jobTargetCollectionScore !== 0 &&
-          form.jobTargetSparepartsLubricantsScore &&
-          form.jobTargetSparepartsLubricantsScore !== 0 &&
-          form.jobTargetShopIncomeScore &&
-          form.jobTargetShopIncomeScore !== 0
-        ) : true; // If job targets shouldn't be shown, don't require them
+        // Job Target scores are optional - user can choose to fill them or not
+        // No validation required for the 7 job target scores
         
         // qualityOfWorkScore5 (single "Job Targets" row) is required if:
         // 1. Employee is HO (always skip - HO doesn't see this row in Step2)
@@ -483,7 +467,9 @@ export default function EvaluationForm({
           return false; // Explicitly require qualityOfWorkScore5 for BranchRankNfile
         }
         
-        return hasBaseScores && hasJobTargetScores && hasQualityOfWorkScore5;
+        // Only require base scores and qualityOfWorkScore5 (if applicable)
+        // Job targets are optional
+        return hasBaseScores && hasQualityOfWorkScore5;
       case 3: // Adaptability
         return (
           form.adaptabilityScore1 &&

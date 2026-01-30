@@ -166,12 +166,23 @@ export default function ViewEmployeeModal({
   return (
     <Dialog open={isOpen} onOpenChangeAction={onCloseAction}>
       <DialogContent
-        className={`max-w-3xl max-h-[80vh] overflow-y-auto p-6 animate-popup relative ${
+        className={`max-w-3xl max-h-[80vh] p-0 animate-popup relative overflow-hidden ${
           isAdminVariant
-            ? "bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100"
-            : "bg-gradient-to-br from-blue-50 to-indigo-50"
+            ? "bg-gradient-to-br from-slate-100 via-gray-50 to-slate-100"
+            : "bg-gradient-to-br from-blue-100 to-indigo-100"
         }`}
       >
+        {/* Fade Background Logo - Fixed position, won't scroll */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+          <img
+            src="/smct.png"
+            alt="SMCT Logo"
+            className="w-145 h-145 object-contain opacity-11"
+          />
+        </div>
+
+        {/* Scrollable content wrapper */}
+        <div className="relative z-10 max-h-[80vh] overflow-y-auto p-6">
         {/* Sticky Close Button - Stays at top when scrolling */}
         <div className="sticky top-0 z-50 flex justify-end mb-4 -mt-6 -mr-6 pt-6 pr-6">
           <Button
@@ -729,6 +740,7 @@ export default function ViewEmployeeModal({
               </CardContent>
             </Card>
           )}
+        </div>
         </div>
       </DialogContent>
     </Dialog>

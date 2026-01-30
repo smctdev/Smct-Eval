@@ -799,20 +799,71 @@ export default function BranchRankNfileEvaluationForm({
       </Dialog>
 
       {/* Success Dialog */}
-      <Dialog open={showSuccessDialog} onOpenChangeAction={setShowSuccessDialog}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog
+        open={showSuccessDialog}
+        onOpenChangeAction={setShowSuccessDialog}
+      >
+        <DialogContent
+          className="max-w-md m-8 success-dialog"
+          style={{
+            animation: "dialogPopup 0.3s ease-out",
+          }}
+        >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-green-600">
-              <AlertTriangle className="h-5 w-5" />
-              Evaluation Submitted Successfully
+            <DialogTitle className="text-lg font-semibold text-gray-900 flex items-center justify-center gap-2">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-green-600 check-animation"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  style={{
+                    strokeDasharray: "20",
+                    strokeDashoffset: "20",
+                    animation: "drawCheck 0.6s ease-in-out 0.3s forwards",
+                  }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              Evaluation Submitted Successfully!
             </DialogTitle>
           </DialogHeader>
-          <p className="py-4">
-            The evaluation has been submitted successfully. The employee will be
-            notified.
-          </p>
-          <DialogFooter>
-            <Button onClick={handleSuccessDialogClose} className="w-full">
+          <div className="py-4">
+            <div className="bg-green-50 p-4 rounded-lg mb-4 success-message">
+              <p className="text-gray-700 text-center">
+                🎉 Your evaluation has been submitted successfully!
+                <br />
+                The employee can now view their results in their dashboard.
+              </p>
+            </div>
+            <div className="text-sm text-gray-600 text-center">
+              <p>
+                <strong>Employee:</strong>{" "}
+                {employee?.fname + " " + employee?.lname}
+              </p>
+              <p>
+                <strong>Submitted:</strong>{" "}
+                {new Date().toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex justify-center">
+            <Button
+              onClick={handleSuccessDialogClose}
+              className="px-8 py-2 bg-red-600 text-white hover:bg-red-700 hover:text-white cursor-pointer hover:scale-110 transition-transform duration-200"
+            >
               Close
             </Button>
           </DialogFooter>

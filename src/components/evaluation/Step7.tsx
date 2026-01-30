@@ -212,7 +212,7 @@ export default function Step7({
       (employee as any).position ||
       ""
     ).toUpperCase().trim();
-    
+  
     // Check if position is Area Manager
     return (
       positionName === "AREA MANAGER" ||

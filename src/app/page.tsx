@@ -85,6 +85,13 @@ function LandingLoginPage() {
       }
 
       if (result) {
+        // Clear welcome modal session storage so it shows on dashboard
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.startsWith('welcomeModal_')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+        
         // All your success flow
         await new Promise((resolve) => setTimeout(resolve, 1000));
         toastMessages.login.success(username);

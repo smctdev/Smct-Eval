@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,10 +9,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDownIcon } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ChevronDownIcon, Info } from "lucide-react";
 import { EvaluationPayload } from "./types";
 import { User, useAuth } from "@/contexts/UserContext";
-import { isNumberObject } from "node:util/types";
 
 interface Step2Props {
   data: EvaluationPayload;
@@ -98,6 +106,7 @@ function ScoreDropdown({
 
 export default function Step2({ data, updateDataAction, employee, evaluationType, forceShowJobTargets = false }: Step2Props) {
   const { user } = useAuth();
+  const [showJobTargetsInfoDialog, setShowJobTargetsInfoDialog] = useState(false);
   
   // Check if employee being evaluated is HO (Head Office)
   // This determines the evaluationType based on the employee being evaluated, not the evaluator
@@ -201,11 +210,20 @@ export default function Step2({ data, updateDataAction, employee, evaluationType
   // 3. OR employee is Branch Manager/Supervisor and not HO
   const showJobTargets = forceShowJobTargets || isEmployeeAreaManager() || (isEmployeeBranchManagerOrSupervisor() && !isHO);
   
-  // Debug: Log to verify evaluationType is being passed
-  // console.log('Step2 - evaluationType:', evaluationType, 'isHO:', isHO);
+  // Show info dialog when job targets are visible (once per session)
+  useEffect(() => {
+    if (showJobTargets) {
+      // Check if user has already seen the dialog in this session
+      const hasSeenDialog = sessionStorage.getItem('jobTargetsInfoDialogShown');
+      if (!hasSeenDialog) {
+        setShowJobTargetsInfoDialog(true);
+        sessionStorage.setItem('jobTargetsInfoDialogShown', 'true');
+      }
+    }
+  }, [showJobTargets]);
   
   // Calculate average score for Quality of Work
-  // Includes: qualityOfWorkScore1-4, and all job target scores if showJobTargets is true
+  // Includes: qualityOfWorkScore1-4 (required), and all job target scores if they exist (optional)
   const calculateAverageScore = () => {
     const baseScores = [
       data.qualityOfWorkScore1,
@@ -214,7 +232,7 @@ export default function Step2({ data, updateDataAction, employee, evaluationType
       data.qualityOfWorkScore4,
     ];
     
-    // Include all job target scores if Job Targets should be shown
+    // Include job target scores if Job Targets should be shown (they're optional, so include if they exist)
     const jobTargetScores = showJobTargets ? [
       data.jobTargetMotorcyclesScore,
       data.jobTargetAppliancesScore,
@@ -256,6 +274,42 @@ export default function Step2({ data, updateDataAction, employee, evaluationType
 
   return (
     <div className="space-y-6">
+      {/* Job Targets Information Dialog */}
+      <Dialog open={showJobTargetsInfoDialog} onOpenChangeAction={setShowJobTargetsInfoDialog}>
+        <DialogContent className="sm:max-w-md p-6">
+          <DialogHeader className="space-y-3 pb-4">
+            <DialogTitle className="flex items-center gap-2 text-blue-600 text-xl font-semibold">
+              <Info className="h-5 w-5" />
+              Job Targets - Optional Fields
+            </DialogTitle>
+            <DialogDescription className="text-gray-700 text-base">
+              The following 7 job target rows are <strong>optional</strong> 
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-5 space-y-3">
+              <p className="text-sm text-gray-800 font-semibold">
+                Please note:
+              </p>
+              <ul className="text-sm text-gray-700 space-y-2 list-disc list-inside pl-2">
+                <li>Only the top 4 Quality of Work rows are required</li>
+                <li>The 7 job target rows below are optional</li>
+                <li>If a job target is <strong>not applicable</strong> to you, simply <strong>leave it blank</strong></li>
+                <li>Only fill in the job targets that are <strong>applicable to your role</strong></li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter className="pt-4">
+            <Button 
+              onClick={() => setShowJobTargetsInfoDialog(false)}
+              className="w-full bg-blue-600 hover:bg-green-600 cursor-pointer hover:scale-110 transition-transform duration-200 text-white px-6 py-2"
+            >
+              I Understand
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* II. QUALITY OF WORK Section */}
       <Card className="bg-white border-gray-200">
         <CardContent className="pt-6">
@@ -270,6 +324,7 @@ export default function Step2({ data, updateDataAction, employee, evaluationType
               deadlines.
             </p>
           </div>
+
 
           {/* Quality of Work Reset Button */}
           <div className="flex justify-end mb-4">
@@ -613,7 +668,7 @@ export default function Step2({ data, updateDataAction, employee, evaluationType
                   </td>
                 </tr>
 
-                {/* Job Targets Section - Multiple target types */}
+                {/* Job Targets Section - Multiple target types (Optional - always visible when showJobTargets is true) */}
                 {showJobTargets && (
                   <>
                     {/* Sales Targets for MOTORCYCLES */}
@@ -1221,7 +1276,7 @@ export default function Step2({ data, updateDataAction, employee, evaluationType
                   ] : []),
                 ].filter((score) => score && score !== 0).length
               }{" "}
-              of {showJobTargets ? 11 : 4} criteria
+              of {showJobTargets ? "up to 11" : 4} criteria (Job Targets are optional)
             </div>
           </div>
         </CardContent>

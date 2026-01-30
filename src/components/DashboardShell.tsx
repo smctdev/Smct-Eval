@@ -38,6 +38,7 @@ import { HRDashboardGuideModal } from "./HRDashboardGuideModal";
 import { EmployeeDashboardGuideModal } from "./EmployeeDashboardGuideModal";
 import { EvaluatorDashboardGuideModal } from "./EvaluatorDashboardGuideModal";
 import { useUser } from "@/contexts/UserContext";
+import { useWelcomeModal } from "@/hooks/useWelcomeModal";
 import { useNotifications } from "@/hooks/useNotifications";
 import { Notification } from "@/lib/types";
 import { apiService } from "@/lib/apiService";
@@ -100,6 +101,24 @@ export default function DashboardShell(props: DashboardShellProps) {
   const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
   const [isDeletingNotification, setIsDeletingNotification] = useState(false);
   const { user, logout, setIsRefreshing } = useUser();
+  
+  // Extract user role - could be in user.role (string) or user.roles[0].name (array)
+  const userRole = useMemo(() => {
+    if (!user) return null;
+    if (user.role && typeof user.role === "string") {
+      return user.role;
+    }
+    if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
+      return user.roles[0]?.name || user.roles[0]?.value || null;
+    }
+    if (user.role && typeof user.role === "object") {
+      return (user.role as any).name || (user.role as any).value || null;
+    }
+    return null;
+  }, [user]);
+  
+  // Welcome modal logic - shows every login
+  const { shouldShowModal, markAsShown, showModal } = useWelcomeModal(userRole);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isClockVisible, setIsClockVisible] = useState(true);
 
@@ -152,6 +171,34 @@ export default function DashboardShell(props: DashboardShellProps) {
       return "hr";
     }
   }, [dashboardTypeProp, sidebarItems]);
+
+  // Auto-show welcome modal every time user logs in
+  useEffect(() => {
+    console.log('[DashboardShell] Welcome modal check:', {
+      shouldShowModal,
+      dashboardType,
+      userRole,
+      willShow: shouldShowModal && dashboardType && dashboardType !== "admin" && userRole
+    });
+    
+    // Only show for hr, employee, and evaluator dashboards (not admin)
+    if (shouldShowModal && dashboardType && dashboardType !== "admin" && userRole) {
+      console.log('[DashboardShell] Opening welcome modal');
+      setIsGuideModalOpen(true);
+    }
+  }, [shouldShowModal, dashboardType, userRole]);
+
+  // Handle welcome modal close - mark as shown for today
+  const handleWelcomeModalClose = () => {
+    setIsGuideModalOpen(false);
+    markAsShown();
+  };
+
+  // Handle manual guide modal open (from help button)
+  const handleManualGuideModalOpen = () => {
+    setIsGuideModalOpen(true);
+    showModal(); // This allows manual opening even if already shown today
+  };
 
   // Memoize boolean flags to ensure stable references
   const isEmployeeDashboard = useMemo(
@@ -338,8 +385,13 @@ export default function DashboardShell(props: DashboardShellProps) {
       {/* Faded overlay for better content readability */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50/95 to-indigo-100/95 pointer-events-none"></div>
       
+      {/* Blur overlay when guide modal is open */}
+      {isGuideModalOpen && (
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-sm z-40 pointer-events-none transition-all duration-300"></div>
+      )}
+      
       {/* Content wrapper with relative positioning */}
-      <div className="relative z-10 flex flex-col min-h-screen">
+      <div className={`relative z-10 flex flex-col min-h-screen transition-all duration-300 ${isGuideModalOpen ? 'blur-sm' : ''}`}>
       {/* Header - Fixed */}
       <header className="fixed top-0 left-0 right-0 bg-white shadow-sm border-b z-50">
         <div className="flex justify-between items-center px-6 py-4">
@@ -1240,7 +1292,7 @@ export default function DashboardShell(props: DashboardShellProps) {
       <Button
         variant="ghost"
         size="lg"
-        onClick={isHelpButtonsVisible ? () => setIsGuideModalOpen(true) : undefined}
+        onClick={isHelpButtonsVisible ? handleManualGuideModalOpen : undefined}
         disabled={!isHelpButtonsVisible}
         className={`fixed bottom-24 right-6 z-50 h-14 w-14 rounded-full bg-blue-100 hover:bg-blue-400 shadow-lg hover:shadow-xl transition-all duration-500 ease-in-out hover:scale-110 hover:rotate-12 active:scale-95 p-0 ${
           isHelpButtonsVisible
@@ -1292,19 +1344,19 @@ export default function DashboardShell(props: DashboardShellProps) {
       {isGuideModalOpen && dashboardType === "hr" && (
         <HRDashboardGuideModal
           isOpen={isGuideModalOpen}
-          onCloseAction={() => setIsGuideModalOpen(false)}
+          onCloseAction={handleWelcomeModalClose}
         />
       )}
       {isGuideModalOpen && dashboardType === "employee" && (
         <EmployeeDashboardGuideModal
           isOpen={isGuideModalOpen}
-          onCloseAction={() => setIsGuideModalOpen(false)}
+          onCloseAction={handleWelcomeModalClose}
         />
       )}
       {isGuideModalOpen && dashboardType === "evaluator" && (
         <EvaluatorDashboardGuideModal
           isOpen={isGuideModalOpen}
-          onCloseAction={() => setIsGuideModalOpen(false)}
+          onCloseAction={handleWelcomeModalClose}
         />
       )}
       </div>

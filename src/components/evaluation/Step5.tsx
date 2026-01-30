@@ -200,7 +200,20 @@ export default function Step5({ data, updateDataAction }: Step5Props) {
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
                     Has not taken any unplanned absences and follows the
-                    company's attendance policy.
+                    company's attendance policy. 
+                    <br />
+                    <br />
+                    Grading Guide:
+                    <br />
+                  (1) 5+ absences in a month
+                  <br />
+                  (2) 3-4 absences in a month
+                  <br />
+                  (3) 1-2 absences in a month
+                  <br />
+                  (4) 2 absences in a quarter
+                  <br />
+                  (5) 1 absence or no absence in a quarter
                     <br />
                     <br />
                   </td>
@@ -268,8 +281,20 @@ export default function Step5({ data, updateDataAction }: Step5Props) {
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-sm text-gray-700">
                     Consistently arrives at work on time, ready to begin work
-                    promptly.
+                    promptly. 
                     <br />
+                    <br />
+                    Guide Guide: 
+                    <br />
+                     (1) 10+ lates in a month
+                     <br />
+                     (2) 7-9 lates in a month
+                     <br />
+                     (3) 4-6 lates in a month
+                     <br />
+                     (4) 2-3 lates in a month
+                     <br />
+                     (5) 1 late or never late in a month
                     <br />
                   </td>
                   <td className="border border-gray-300 px-4 py-3 text-center">

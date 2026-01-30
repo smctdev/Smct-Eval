@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useDialogAnimation } from '@/hooks/useDialogAnimation';
-import { BarChart3, Users, FileText, History, CheckCircle2, Eye, TrendingUp, Calendar, ClipboardList, Search, Filter, Building2, MapPin } from 'lucide-react';
+import { BarChart3, Users, FileText, History, CheckCircle2, Eye, TrendingUp, Calendar, ClipboardList, Search, Filter, Building2, MapPin, Sparkles, ArrowRight } from 'lucide-react';
 import {
   Carousel,
   CarouselContent,
@@ -24,6 +24,7 @@ export function HRDashboardGuideModal({ isOpen, onCloseAction }: HRDashboardGuid
   const [api, setApi] = useState<CarouselApi>();
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
+  const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     if (!api) {
@@ -36,8 +37,17 @@ export function HRDashboardGuideModal({ isOpen, onCloseAction }: HRDashboardGuid
     api.on("select", () => {
       setCanScrollPrev(api.canScrollPrev());
       setCanScrollNext(api.canScrollNext());
+      setCurrent(api.selectedScrollSnap());
     });
   }, [api]);
+
+  // Reset to first slide when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      api?.scrollTo(0);
+      setCurrent(0);
+    }
+  }, [isOpen, api]);
 
   return (
     <>
@@ -76,6 +86,48 @@ export function HRDashboardGuideModal({ isOpen, onCloseAction }: HRDashboardGuid
         <div className="flex-1 overflow-y-auto min-h-0">
           <Carousel className="w-full" setApi={setApi}>
           <CarouselContent>
+            {/* Slide 0: Welcome Message */}
+            <CarouselItem>
+              <div className="p-2">
+                <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden">
+                  {/* Blur effect background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-100/30 via-indigo-100/30 to-purple-100/30 backdrop-blur-sm z-0"></div>
+                  {/* Decorative background elements */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                    <div className="absolute top-10 left-10 w-32 h-32 bg-blue-200 rounded-full opacity-20 blur-3xl"></div>
+                    <div className="absolute bottom-10 right-10 w-40 h-40 bg-indigo-200 rounded-full opacity-20 blur-3xl"></div>
+                  </div>
+                  <CardContent className="p-8 relative z-10 flex flex-col items-center justify-center text-center min-h-[400px]">
+                    <div className="mb-6">
+                      <div className="flex items-center justify-center mb-4">
+                        <img
+                          src="/smct.png"
+                          alt="SMCT Logo"
+                          className="h-20 w-auto object-contain"
+                        />
+                      </div>
+                    </div>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                      Welcome to Your HR Dashboard! 👋
+                    </h2>
+                    <p className="text-lg text-gray-700 mb-2 max-w-2xl">
+                      Great to see you! This guide will help you navigate all the powerful features of your HR dashboard.
+                    </p>
+                    <p className="text-base text-gray-600 mb-8 max-w-xl">
+                      Let's explore together how to manage employees, track evaluations, organize departments, and analyze performance across your organization.
+                    </p>
+                    <Button
+                      onClick={() => api?.scrollNext()}
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-6 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                    >
+                      Proceed to Guide
+                      <ArrowRight className="w-5 h-5" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </CarouselItem>
+
             {/* Slide 1: Overview Tab */}
             <CarouselItem>
               <div className="p-2">
@@ -378,7 +430,7 @@ export function HRDashboardGuideModal({ isOpen, onCloseAction }: HRDashboardGuid
                       </div>
                       <div className="flex-1">
                         <p className="text-gray-700 mb-4">
-                          Access comprehensive performance reviews for all employees across the organization.
+                          Access your own performance reviews.
                         </p>
                         <div className="space-y-3">
                           <div className="flex items-center gap-3">
@@ -387,7 +439,7 @@ export function HRDashboardGuideModal({ isOpen, onCloseAction }: HRDashboardGuid
                             </div>
                             <div>
                               <p className="font-medium text-gray-900">Review Analytics</p>
-                              <p className="text-sm text-gray-600">View performance summaries and ratings across departments</p>
+                              <p className="text-sm text-gray-600">View performance summaries and ratings of your own evaluations</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
@@ -396,7 +448,7 @@ export function HRDashboardGuideModal({ isOpen, onCloseAction }: HRDashboardGuid
                             </div>
                             <div>
                               <p className="font-medium text-gray-900">Performance Trends</p>
-                              <p className="text-sm text-gray-600">Identify organizational performance patterns and improvements</p>
+                              <p className="text-sm text-gray-600">Identify patterns and improvements in your own performance</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
@@ -405,13 +457,13 @@ export function HRDashboardGuideModal({ isOpen, onCloseAction }: HRDashboardGuid
                             </div>
                             <div>
                               <p className="font-medium text-gray-900">Detailed Reviews</p>
-                              <p className="text-sm text-gray-600">Access complete evaluation details for any employee</p>
+                              <p className="text-sm text-gray-600">Access complete details of your own performance evaluations</p>
                             </div>
                           </div>
                         </div>
                         <div className="mt-4 p-3 bg-blue-100 rounded-lg">
                           <p className="text-sm text-blue-800">
-                            <strong>Note:</strong> Reviews are accessible through the Analytics section in the sidebar.
+                            <strong>Note:</strong> Reviews show your own performance evaluations where you are the employee being evaluated.
                           </p>
                         </div>
                       </div>
@@ -447,7 +499,7 @@ export function HRDashboardGuideModal({ isOpen, onCloseAction }: HRDashboardGuid
                       </div>
                       <div className="flex-1">
                         <p className="text-gray-700 mb-4">
-                          View a complete chronological history of all evaluations across the organization.
+                          View a complete chronological history of all your own performance evaluations.
                         </p>
                         <div className="space-y-3">
                           <div className="flex items-center gap-3">
@@ -456,7 +508,7 @@ export function HRDashboardGuideModal({ isOpen, onCloseAction }: HRDashboardGuid
                             </div>
                             <div>
                               <p className="font-medium text-gray-900">Historical Timeline</p>
-                              <p className="text-sm text-gray-600">See all evaluations organized by date and period</p>
+                              <p className="text-sm text-gray-600">See all your own performance evaluations organized by date and period</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
@@ -465,7 +517,7 @@ export function HRDashboardGuideModal({ isOpen, onCloseAction }: HRDashboardGuid
                             </div>
                             <div>
                               <p className="font-medium text-gray-900">Advanced Search</p>
-                              <p className="text-sm text-gray-600">Find evaluations by employee, department, branch, or date range</p>
+                              <p className="text-sm text-gray-600">Find your own performance evaluations by date or period</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3">
@@ -474,13 +526,13 @@ export function HRDashboardGuideModal({ isOpen, onCloseAction }: HRDashboardGuid
                             </div>
                             <div>
                               <p className="font-medium text-gray-900">Export & Reports</p>
-                              <p className="text-sm text-gray-600">Generate reports and export evaluation data for analysis</p>
+                              <p className="text-sm text-gray-600">Generate reports and export your own evaluation data for analysis</p>
                             </div>
                           </div>
                         </div>
                         <div className="mt-4 p-3 bg-blue-100 rounded-lg">
                           <p className="text-sm text-blue-800">
-                            <strong>Tip:</strong> Use the history tab to track evaluation completion rates and identify trends.
+                            <strong>Tip:</strong> Use the history tab to track your own performance patterns and review your evaluation history.
                           </p>
                         </div>
                       </div>
@@ -493,8 +545,16 @@ export function HRDashboardGuideModal({ isOpen, onCloseAction }: HRDashboardGuid
             {/* Slide 7: Quick Tips */}
             <CarouselItem>
               <div className="p-2">
-                <Card className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200">
-                  <CardContent className="p-6">
+                <Card className="bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-200 relative overflow-hidden">
+                  {/* Faded Background Logo - Fixed position, won't scroll */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                    <img
+                      src="/smct.png"
+                      alt="SMCT Logo"
+                      className="w-145 h-145 object-contain opacity-15"
+                    />
+                  </div>
+                  <CardContent className="p-6 relative z-10">
                     <div className="mb-4">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <CheckCircle2 className="w-5 h-5 text-blue-600" />
@@ -547,54 +607,61 @@ export function HRDashboardGuideModal({ isOpen, onCloseAction }: HRDashboardGuid
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => api?.scrollPrev()}
-              disabled={!canScrollPrev}
-              className="bg-blue-600 hover:bg-blue-700 text-white hover:text-white hover:bg-green-700 cursor-pointer hover:scale-110 transition-transform duration-200 font-medium"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                viewBox="0 0 20 20"
-                fill="currentColor"
+          {current === 0 ? (
+            // Welcome slide - hide all buttons, only show proceed button in the card
+            <div className="w-full"></div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => api?.scrollPrev()}
+                  disabled={!canScrollPrev}
+                  className="bg-blue-600 hover:bg-blue-700 text-white hover:text-white hover:bg-green-700 cursor-pointer hover:scale-110 transition-transform duration-200 font-medium"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => api?.scrollNext()}
+                  disabled={!canScrollNext}
+                  className="bg-blue-600 hover:bg-blue-700 text-white hover:text-white hover:bg-green-700 cursor-pointer hover:scale-110 transition-transform duration-200 font-medium"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </Button>
+              </div>
+              <Button
+                onClick={onCloseAction}
+                className="bg-blue-600 hover:bg-blue-700 text-white hover:text-white hover:bg-green-700 cursor-pointer hover:scale-110 transition-transform duration-200 shadow-md hover:shadow-lg font-medium"
               >
-                <path
-                  fillRule="evenodd"
-                  d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => api?.scrollNext()}
-              disabled={!canScrollNext}
-              className="bg-blue-600 hover:bg-blue-700 text-white hover:text-white hover:bg-green-700 cursor-pointer hover:scale-110 transition-transform duration-200 s font-medium"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </Button>
-          </div>
-          <Button
-            onClick={onCloseAction}
-            className="bg-blue-600 hover:bg-blue-700 text-white hover:text-white hover:bg-green-700 cursor-pointer hover:scale-110 transition-transform duration-200 shadow-md hover:shadow-lg font-medium"
-          >
-            Got it!
-          </Button>
+                Got it!
+              </Button>
+            </>
+          )}
         </div>
         </DialogContent>
     </Dialog>
