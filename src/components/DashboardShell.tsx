@@ -105,14 +105,14 @@ export default function DashboardShell(props: DashboardShellProps) {
   // Extract user role - could be in user.role (string) or user.roles[0].name (array)
   const userRole = useMemo(() => {
     if (!user) return null;
-    if (user.role && typeof user.role === "string") {
-      return user.role;
+    if (user.roles && typeof user.roles === "string") {
+      return user.roles;
     }
     if (user.roles && Array.isArray(user.roles) && user.roles.length > 0) {
       return user.roles[0]?.name || user.roles[0]?.value || null;
     }
-    if (user.role && typeof user.role === "object") {
-      return (user.role as any).name || (user.role as any).value || null;
+    if (user.roles && typeof user.roles === "object") {
+      return (user.roles as any).name || (user.roles as any).value || null;
     }
     return null;
   }, [user]);
