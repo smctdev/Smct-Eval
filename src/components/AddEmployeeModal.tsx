@@ -245,7 +245,7 @@ const AddEmployeeModal: React.FC<AddEmployeeModalProps> = ({
             username: getValue(normalizedRow, ["username", "user_name"]),
             password: getValue(normalizedRow, ["password"]),
             contact: getValue(normalizedRow, ["contact", "contact_number", "mobile", "phone"]),
-            date_hired: getValue(normalizedRow, ["date_hired", "datehired", "hired_date"]),
+            date_hired: dateHired,
           };
         })
         .filter((row) =>
