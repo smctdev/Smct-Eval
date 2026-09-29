@@ -20,6 +20,7 @@ import {
   User,
 } from "lucide-react";
 import { EvaluationPayload } from "./types";
+import { ReviewTypeOthersCustomInput } from "./ReviewTypeOthersCustomInput";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/useToast";
 import {
@@ -819,11 +820,8 @@ export default function OverallAssessmentRankNfile({
                   {data.reviewTypeOthersCustom !== "" &&
                     data.reviewTypeOthersCustom !== null &&
                     data.reviewTypeOthersCustom.trim() !== "" && (
-                      <input
-                        type="text"
+                      <ReviewTypeOthersCustomInput
                         value={data.reviewTypeOthersCustom || ""}
-                        className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded bg-gray-50"
-                        placeholder="Enter custom review type"
                         disabled
                         readOnly
                       />

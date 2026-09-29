@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import apiService from "@/lib/apiService";
 import {
   getEvaluatorDisplayName,
@@ -67,6 +67,8 @@ export interface ViewResultsModalProps {
   /** When set, router fetches submission and shows loading overlay until ready. */
   submissionId?: number | string | null;
   onLoadErrorAction?: (message: string) => void;
+  /** Stop the open-loading state after this many milliseconds and report an error. */
+  loadTimeoutMs?: number;
   onApprove?: (submissionId: number) => void;
   isApproved?: boolean;
   approvalData?: ApprovalData | null;
@@ -210,6 +212,7 @@ export default function ViewResultsModalRouter({
   submission,
   submissionId = null,
   onLoadErrorAction,
+  loadTimeoutMs,
   onApprove,
   isApproved = false,
   approvalData = null,
@@ -227,6 +230,11 @@ export default function ViewResultsModalRouter({
   const [isLoadingSubmission, setIsLoadingSubmission] = useState(false);
 
   const activeSubmission = submission ?? loadedSubmission;
+  const loadTimedOutRef = useRef(false);
+  const onLoadErrorRef = useRef(onLoadErrorAction);
+  const onCloseRef = useRef(onCloseAction);
+  onLoadErrorRef.current = onLoadErrorAction;
+  onCloseRef.current = onCloseAction;
 
   useEffect(() => {
     if (!isOpen) {
@@ -259,7 +267,7 @@ export default function ViewResultsModalRouter({
     const loadSubmission = async () => {
       try {
         const result = await apiService.getSubmissionById(submissionId);
-        if (cancelled) return;
+        if (cancelled || loadTimedOutRef.current) return;
 
         if (result) {
           setLoadedSubmission(result as Submission);
@@ -270,7 +278,7 @@ export default function ViewResultsModalRouter({
           onCloseAction();
         }
       } catch (error) {
-        if (cancelled) return;
+        if (cancelled || loadTimedOutRef.current) return;
         console.error("Failed to load evaluation submission:", error);
         onLoadErrorAction?.(
           "Unable to load evaluation details. Please try again."
@@ -351,6 +359,37 @@ export default function ViewResultsModalRouter({
   const isPreparingModal =
     isOpen &&
     (isLoadingSubmission || !activeSubmission || isSupervisorLoading);
+
+  const loadStartedAtRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    loadStartedAtRef.current = null;
+    loadTimedOutRef.current = false;
+  }, [isOpen, submissionId]);
+
+  useEffect(() => {
+    if (!isOpen || !isPreparingModal || loadTimeoutMs == null || loadTimeoutMs <= 0) {
+      return;
+    }
+
+    if (loadStartedAtRef.current == null) {
+      loadStartedAtRef.current = Date.now();
+    }
+
+    const remaining = Math.max(
+      0,
+      loadTimeoutMs - (Date.now() - loadStartedAtRef.current)
+    );
+    const timer = window.setTimeout(() => {
+      loadTimedOutRef.current = true;
+      onLoadErrorRef.current?.(
+        "This is taking longer to open. Please try again or check your connection."
+      );
+      onCloseRef.current();
+    }, remaining);
+
+    return () => window.clearTimeout(timer);
+  }, [isOpen, isPreparingModal, loadTimeoutMs, submissionId]);
 
   if (!isOpen) return null;
 

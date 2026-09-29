@@ -180,7 +180,13 @@ export default function ProfileModal({
           currentSignature === "null" ||
           currentSignature === "undefined") {
         newErrors.signature = "Digital signature is required";
+      } else if (signaturePadRef.current?.isLowSignaturePending?.()) {
+        newErrors.signature =
+          "Signature is too low — redraw centered, or confirm Proceed anyway";
       }
+    } else if (signaturePadRef.current?.isLowSignaturePending?.()) {
+      newErrors.signature =
+        "Signature is too low — redraw centered, or confirm Proceed anyway";
     }
 
     setErrors(newErrors);

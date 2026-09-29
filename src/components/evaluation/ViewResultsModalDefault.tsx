@@ -12,6 +12,7 @@ import { getEvaluatorDisplayName } from "@/lib/supervisorDisplay";
 import { CONFIG } from "../../../config/config";
 import apiService from "@/lib/apiService";
 import { getEmployeeBranchCodeDisplay } from "./employeeBranchLabel";
+import { ReviewTypeOthersCustomInput } from "./ReviewTypeOthersCustomInput";
 
 type Submission = {
   id: number;
@@ -2154,13 +2155,10 @@ export default function ViewResultsModal({
                               submission.reviewTypeOthersCustom !== null &&
                               submission.reviewTypeOthersCustom.trim() !==
                                 "" && (
-                                <input
-                                  type="text"
+                                <ReviewTypeOthersCustomInput
                                   value={
                                     submission.reviewTypeOthersCustom || ""
                                   }
-                                  className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded bg-gray-50"
-                                  placeholder="Enter custom review type"
                                   disabled
                                   readOnly
                                 />

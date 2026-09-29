@@ -1018,6 +1018,7 @@ export function EvalRecordRowActions({
   currentUserId,
   draftOwnedByCurrentUser = false,
   allowPendingEditByCurrentUser = false,
+  allowDraftEdit = false,
   deleting,
   accepting,
   rejecting,
@@ -1033,19 +1034,22 @@ export function EvalRecordRowActions({
   draftOwnedByCurrentUser?: boolean;
   /** When true on a pending row, show Edit for the signed-in evaluator. */
   allowPendingEditByCurrentUser?: boolean;
+  /** When true on a draft row, show Edit (e.g. HR may edit any draft). */
+  allowDraftEdit?: boolean;
   deleting?: boolean;
   accepting?: boolean;
   rejecting?: boolean;
 }) {
   const isDraft = isReviewDraft(review);
+  const showDraftEdit =
+    isDraft && (draftOwnedByCurrentUser || allowDraftEdit) && onEditAction != null;
   const showApproverReviewActions =
     isReviewApproverActionable(review, currentUserId) &&
     (onAcceptAction != null || onRejectAction != null);
-  const showDraftOwnerActions =
-    isDraft && draftOwnedByCurrentUser && onEditAction != null;
+  const showDraftOwnerActions = showDraftEdit;
   const showDraftReviewActions =
     isDraft &&
-    !draftOwnedByCurrentUser &&
+    !showDraftEdit &&
     (onAcceptAction != null || onRejectAction != null);
   const canDelete = isReviewDeletable(review) && onDeleteAction != null;
   const editDisabledForEvaluator = isReviewEditDisabledForEvaluator(
@@ -1057,7 +1061,7 @@ export function EvalRecordRowActions({
     !editDisabledForEvaluator &&
     (isReviewEditable(review, currentUserId) ||
       allowPendingEditByCurrentUser ||
-      (isDraft && draftOwnedByCurrentUser));
+      showDraftEdit);
   const showDisabledEdit =
     onEditAction != null &&
     editDisabledForEvaluator;
@@ -1065,7 +1069,7 @@ export function EvalRecordRowActions({
     ? isEvaluationStatusRejected(review.status)
       ? "Editing is disabled while this evaluation is rejected"
       : "Editing is disabled for this evaluation status"
-    : isDraft && draftOwnedByCurrentUser
+    : showDraftEdit
       ? "Edit this draft evaluation"
       : allowPendingEditByCurrentUser ||
           (isEvaluationStatusPending(review.status) && reviewHasApprover(review))
@@ -1158,6 +1162,27 @@ export function EvalRecordRowActions({
           <Pencil className="h-4 w-4 lg:hidden" />
           <span className="hidden lg:inline">✏️ Edit</span>
         </Button>
+        {canDelete ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={onDeleteAction}
+            disabled={deleting}
+            aria-label="Delete evaluation"
+            title="Delete this draft evaluation"
+            className="h-8 w-8 shrink-0 cursor-pointer border-red-200 bg-red-100 text-red-700 hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 lg:h-8 lg:w-auto lg:px-2 lg:transition-all lg:duration-200 lg:hover:-translate-y-0.5 lg:hover:shadow-md lg:active:translate-y-0"
+          >
+            {deleting ? (
+              <span className="text-xs lg:hidden">…</span>
+            ) : (
+              <Trash2 className="h-4 w-4 lg:hidden" />
+            )}
+            <span className="hidden lg:inline">
+              {deleting ? "Deleting…" : "❌ Delete"}
+            </span>
+          </Button>
+        ) : null}
       </div>
     );
   }

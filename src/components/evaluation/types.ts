@@ -15,6 +15,8 @@ interface EvaluationPayload {
   reviewTypeRegular: ReviewTypeRegular;
   reviewTypeOthersImprovement: boolean;
   reviewTypeOthersCustom: string;
+  /** Normalized period label: Q1–Q4, M3/M5, or "Others". */
+  quarter?: string;
   priorityArea1: string;
   priorityArea2: string;
   priorityArea3: string;

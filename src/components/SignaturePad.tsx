@@ -15,10 +15,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { dataURLtoFile } from "@/utils/data-url-to-file";
-import Image from "next/image";
 import { CONFIG } from "../../config/config";
-import { User, PenTool, CheckCircle } from "lucide-react";
+import { PenTool, CheckCircle, AlertTriangle, Crosshair } from "lucide-react";
 import { useAuth } from "@/contexts/UserContext";
 
 interface SignaturePadProps {
@@ -35,6 +33,107 @@ interface SignaturePadProps {
 
 export interface SignaturePadRef {
   getSignature: () => string | null;
+  /** True when ink is too low and the user has not confirmed proceeding. */
+  isLowSignaturePending: () => boolean;
+}
+
+/** Signature is "too low" when its vertical center sits in the bottom ~38% of the pad. */
+const LOW_SIGNATURE_MIDPOINT_RATIO = 0.62;
+/** Keep a little padding around trimmed ink so strokes don't touch the edges. */
+const SIGNATURE_EXPORT_PADDING_RATIO = 0.1;
+
+function getInkBounds(imageData: ImageData): {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+} | null {
+  const { data, width, height } = imageData;
+  let minX = width;
+  let minY = height;
+  let maxX = 0;
+  let maxY = 0;
+  let found = false;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const alpha = data[(y * width + x) * 4 + 3];
+      if (alpha > 0) {
+        found = true;
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  return found ? { minX, minY, maxX, maxY } : null;
+}
+
+function isSignatureInkTooLow(
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D
+): boolean {
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const bounds = getInkBounds(imageData);
+  if (!bounds) return false;
+
+  const midY = (bounds.minY + bounds.maxY) / 2;
+  return midY > canvas.height * LOW_SIGNATURE_MIDPOINT_RATIO;
+}
+
+/**
+ * Trim transparent edges and redraw the ink centered on a same-size canvas.
+ * This makes saved signatures sit consistently above the name in view/print.
+ */
+function exportCenteredSignatureDataURL(
+  source: HTMLCanvasElement
+): string | null {
+  const ctx = source.getContext("2d");
+  if (!ctx) return null;
+
+  const imageData = ctx.getImageData(0, 0, source.width, source.height);
+  const bounds = getInkBounds(imageData);
+  if (!bounds) return null;
+
+  const inkWidth = bounds.maxX - bounds.minX + 1;
+  const inkHeight = bounds.maxY - bounds.minY + 1;
+  if (inkWidth <= 0 || inkHeight <= 0) return null;
+
+  const out = document.createElement("canvas");
+  out.width = Math.max(1, source.width);
+  out.height = Math.max(1, source.height);
+  const outCtx = out.getContext("2d");
+  if (!outCtx) return null;
+
+  const padX = out.width * SIGNATURE_EXPORT_PADDING_RATIO;
+  const padY = out.height * SIGNATURE_EXPORT_PADDING_RATIO;
+  const maxW = Math.max(1, out.width - padX * 2);
+  const maxH = Math.max(1, out.height - padY * 2);
+  const scale = Math.min(maxW / inkWidth, maxH / inkHeight);
+
+  const drawW = inkWidth * scale;
+  const drawH = inkHeight * scale;
+  const dx = (out.width - drawW) / 2;
+  const dy = (out.height - drawH) / 2;
+
+  outCtx.clearRect(0, 0, out.width, out.height);
+  outCtx.imageSmoothingEnabled = true;
+  outCtx.imageSmoothingQuality = "high";
+  outCtx.drawImage(
+    source,
+    bounds.minX,
+    bounds.minY,
+    inkWidth,
+    inkHeight,
+    dx,
+    dy,
+    drawW,
+    drawH
+  );
+
+  return out.toDataURL("image/png");
 }
 
 const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
@@ -59,6 +158,9 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
   const [hasDrawingOnCanvas, setHasDrawingOnCanvas] = useState(false); // Track if there's drawing on canvas (not yet captured)
   const [showInstructions, setShowInstructions] = useState(true); // Show instructions overlay before drawing
   const [showContactDeveloperDialog, setShowContactDeveloperDialog] = useState(false);
+  const [isSignatureTooLow, setIsSignatureTooLow] = useState(false);
+  const [lowSignatureAcknowledged, setLowSignatureAcknowledged] = useState(false);
+  const [showLowSignatureConfirm, setShowLowSignatureConfirm] = useState(false);
   const { user } = useAuth();
   // Note: Polling for signature reset approval is now handled globally in UserContext
   // to prevent multiple intervals from multiple SignaturePad instances
@@ -70,19 +172,23 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
       if (localSignature) {
         return localSignature;
       }
-      
-      // If there's drawing on canvas, capture it now (on-demand capture)
+
+      // If there's drawing on canvas, capture a trimmed + centered PNG
       if (hasDrawingOnCanvas) {
         const canvas = canvasRef.current;
         if (canvas) {
-          const dataURL = canvas.toDataURL("image/png");
-          return dataURL;
+          return (
+            exportCenteredSignatureDataURL(canvas) ??
+            canvas.toDataURL("image/png")
+          );
         }
       }
-      
+
       // Otherwise return value prop (saved signature from server)
       return value || null;
-    }
+    },
+    isLowSignaturePending: () =>
+      isSignatureTooLow && hasDrawingOnCanvas && !lowSignatureAcknowledged,
   }));
   // Helper function to get coordinates
   const getCoordinates = (
@@ -246,6 +352,9 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
+    // New strokes need a fresh low-position check after the user finishes.
+    setLowSignatureAcknowledged(false);
+    setShowLowSignatureConfirm(false);
   };
 
   const draw = (
@@ -290,6 +399,12 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
         });
         
         if (hasContent) {
+          const tooLow = isSignatureInkTooLow(canvas, ctx);
+          setIsSignatureTooLow(tooLow);
+          if (!tooLow) {
+            setLowSignatureAcknowledged(false);
+            setShowLowSignatureConfirm(false);
+          }
           setHasDrawingOnCanvas(true);
           setHasSignature(true);
           setIsSavedSignature(false); // Newly drawn signature, not saved yet
@@ -305,6 +420,9 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
     setPreviewImage("");
     setLastDrawnSignature(null);
     setHasDrawingOnCanvas(false);
+    setIsSignatureTooLow(false);
+    setLowSignatureAcknowledged(false);
+    setShowLowSignatureConfirm(false);
     onChangeAction(null); // Notify parent that signature is cleared
 
     // Small delay to ensure canvas is rendered before resetting
@@ -327,11 +445,32 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
     }, 0);
   };
 
+  const showCanvas =
+    !(hasSignature && isSavedSignature && (previewImage || localSignature) && !hasDrawingOnCanvas);
+  const showLowWarning =
+    showCanvas &&
+    hasDrawingOnCanvas &&
+    isSignatureTooLow &&
+    !lowSignatureAcknowledged;
+  const showLowAcknowledgedHint =
+    showCanvas &&
+    hasDrawingOnCanvas &&
+    isSignatureTooLow &&
+    lowSignatureAcknowledged;
+  const showCenteredOk =
+    showCanvas && hasDrawingOnCanvas && !isSignatureTooLow;
+
   return (
     <div className={`space-y-3 ${className}`}>
       <div
-        className={`relative touch-none overscroll-contain rounded-lg border-2 border-dashed bg-gray-50 p-4 ${
-          hasError ? "border-red-300 bg-red-50" : "border-gray-300"
+        className={`relative touch-none overscroll-contain rounded-lg border-2 border-dashed p-4 transition-colors ${
+          hasError
+            ? "border-red-300 bg-red-50"
+            : showLowWarning
+            ? "border-red-300 bg-red-50/80"
+            : showCenteredOk
+            ? "border-green-300 bg-green-50/80"
+            : "border-gray-300 bg-gray-50"
         }`}
       >
          {/* Instructions Overlay */}
@@ -349,6 +488,7 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
                  </h3>
                  <p className="text-sm text-gray-600 leading-relaxed">
                    Press and hold to draw your signature. Release to finish.
+                   Aim for the center, so your signature does not sit too low.
                  </p>
                </div>
                <Button
@@ -369,7 +509,7 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
               src={localSignature || previewImage}
               alt="Signature"
               className="max-w-full max-h-full object-contain"
-              onError={(e) => {
+              onError={() => {
                 console.error("Signature image failed to load:", localSignature || previewImage);
                 // If image fails to load, reset signature state
                 setHasSignature(false);
@@ -379,26 +519,158 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
             />
           </div>
         ) : (
-           <canvas
-             ref={canvasRef}
-             className={`w-full h-40 cursor-crosshair bg-white rounded border ${
-               hasError ? "border-red-300" : "border-gray-200"
-             } ${showInstructions ? "cursor-not-allowed opacity-50" : "cursor-crosshair"}`}
-             style={{ display: "block", touchAction: "none" }}
-             onMouseDown={showInstructions ? undefined : startDrawing}
-             onMouseMove={showInstructions ? undefined : draw}
-             onMouseUp={showInstructions ? undefined : stopDrawing}
-             onMouseLeave={showInstructions ? undefined : () => stopDrawing()}
-             onTouchStart={showInstructions ? undefined : startDrawing}
-             onTouchMove={showInstructions ? undefined : draw}
-             onTouchEnd={showInstructions ? undefined : stopDrawing}
-           />
+          <div className="relative w-full">
+            {/* Faded red wash when signature sits too low */}
+            {showLowWarning && (
+              <div
+                className="pointer-events-none absolute inset-0 z-[1] rounded border border-red-300 bg-red-500/15"
+                aria-hidden
+              />
+            )}
+
+            {/* Faded green wash when signature is centered well */}
+            {showCenteredOk && (
+              <div
+                className="pointer-events-none absolute inset-0 z-[1] rounded border border-green-300 bg-green-500/15"
+                aria-hidden
+              />
+            )}
+
+            {/* Center cross-hair guide */}
+            {!showInstructions && (
+              <div
+                className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center"
+                aria-hidden
+              >
+                <div
+                  className={`absolute left-1/2 top-[12%] bottom-[12%] w-px -translate-x-1/2 ${
+                    showCenteredOk
+                      ? "bg-green-400/70"
+                      : showLowWarning
+                      ? "bg-red-300/70"
+                      : "bg-slate-300/70"
+                  }`}
+                />
+                <div
+                  className={`absolute top-1/2 left-[10%] right-[10%] h-px -translate-y-1/2 ${
+                    showCenteredOk
+                      ? "bg-green-400/70"
+                      : showLowWarning
+                      ? "bg-red-300/70"
+                      : "bg-slate-300/70"
+                  }`}
+                />
+                <div
+                  className={`flex h-7 w-7 items-center justify-center rounded-full border bg-white/40 shadow-sm ${
+                    showCenteredOk
+                      ? "border-green-400/80"
+                      : showLowWarning
+                      ? "border-red-300/80"
+                      : "border-slate-300/80"
+                  }`}
+                >
+                  <Crosshair
+                    className={`h-3.5 w-3.5 ${
+                      showCenteredOk
+                        ? "text-green-500"
+                        : showLowWarning
+                        ? "text-red-400"
+                        : "text-slate-400"
+                    }`}
+                  />
+                </div>
+              </div>
+            )}
+
+            <canvas
+              ref={canvasRef}
+              className={`relative z-0 w-full h-40 cursor-crosshair rounded border bg-white ${
+                hasError || showLowWarning
+                  ? "border-red-300"
+                  : showCenteredOk
+                  ? "border-green-300"
+                  : "border-gray-200"
+              } ${showInstructions ? "cursor-not-allowed opacity-50" : "cursor-crosshair"}`}
+              style={{ display: "block", touchAction: "none" }}
+              onMouseDown={showInstructions ? undefined : startDrawing}
+              onMouseMove={showInstructions ? undefined : draw}
+              onMouseUp={showInstructions ? undefined : stopDrawing}
+              onMouseLeave={showInstructions ? undefined : () => stopDrawing()}
+              onTouchStart={showInstructions ? undefined : startDrawing}
+              onTouchMove={showInstructions ? undefined : draw}
+              onTouchEnd={showInstructions ? undefined : stopDrawing}
+            />
+          </div>
+        )}
+
+        {showCenteredOk && (
+          <div className="mt-3 rounded-md border border-green-200 bg-green-50/90 px-3 py-2.5">
+            <div className="flex items-start gap-2">
+              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-green-800">
+                  Signature looks well placed
+                </p>
+                <p className="text-xs leading-relaxed text-green-700">
+                  Nice — it’s centered on the pad and ready to save.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showLowWarning && (
+          <div className="mt-3 rounded-md border border-red-200 bg-red-50/90 px-3 py-2.5">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <p className="text-sm font-medium text-red-800">
+                  Signature is too low
+                </p>
+                <p className="text-xs leading-relaxed text-red-700">
+                  Please redraw closer to the center cross-hair, or proceed if you
+                  want to keep this position.
+                </p>
+                <div className="flex flex-wrap gap-2 pt-0.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={clearSignature}
+                    className="h-8 cursor-pointer border-red-300 bg-white text-red-700 hover:bg-red-100 hover:text-red-800"
+                  >
+                    Redraw centered
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setShowLowSignatureConfirm(true)}
+                    className="h-8 cursor-pointer bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Proceed anyway
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showLowAcknowledgedHint && (
+          <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+            <p className="text-xs leading-relaxed text-amber-800">
+              You chose to keep a low signature. It may appear low when saved.
+            </p>
+          </div>
         )}
 
         <p
           className={`text-sm mt-2 text-center ${
             hasError
               ? "text-red-600"
+              : showLowWarning
+              ? "text-red-600"
+              : showCenteredOk
+              ? "text-green-700"
               : hasSignature && isSavedSignature
               ? "text-green-600"
               : hasDrawingOnCanvas
@@ -408,13 +680,17 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
         >
           {hasError
             ? "⚠️ Signature is required"
+            : showLowWarning
+            ? "Move your signature toward the center cross-hair"
+            : showCenteredOk
+            ? "Signature placement looks good ✓"
             : hasSignature && isSavedSignature
             ? "Signature saved ✓"
             : hasDrawingOnCanvas
             ? "Signature ready - Click Save to capture"
             : required
             ? "Please draw your signature above *"
-            : "Draw your signature above"}
+            : "Draw your signature above — center on the cross-hair"}
         </p>
       </div>
 
@@ -493,6 +769,53 @@ const SignaturePad = forwardRef<SignaturePadRef, SignaturePadProps>(({
           </div>
         )}
       </div>
+
+      {/* Low signature proceed confirmation */}
+      <Dialog
+        open={showLowSignatureConfirm}
+        onOpenChangeAction={(open) => {
+          setShowLowSignatureConfirm(open);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="mb-1 flex items-center gap-2">
+              <div className="rounded-full bg-amber-100 p-2">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+              </div>
+              <DialogTitle>Signature appears low</DialogTitle>
+            </div>
+            <DialogDescription className="text-left leading-relaxed text-gray-600">
+              Your signature will appear low if you save it like this. For best
+              results, redraw it centered on the cross-hair. Do you still want to
+              proceed?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowLowSignatureConfirm(false);
+                clearSignature();
+              }}
+              className="cursor-pointer"
+            >
+              Redraw centered
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setLowSignatureAcknowledged(true);
+                setShowLowSignatureConfirm(false);
+              }}
+              className="cursor-pointer bg-amber-600 text-white hover:bg-amber-700"
+            >
+              Proceed with low signature
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Contact Developer Dialog */}
       <Dialog

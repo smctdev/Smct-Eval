@@ -943,6 +943,89 @@ export const apiService = {
     return response.data;
   },
 
+  /** Save a HO Rank & File evaluation as draft. Backend: POST `/HoRankNFile/draft/{user}` */
+  postHoRankNFileDraft: async (
+    userId: number | string,
+    submission: EvaluationPayload | Record<string, unknown>
+  ): Promise<any> => {
+    const response = await api.post(
+      `/HoRankNFile/draft/${userId}`,
+      submission
+    );
+    return response.data;
+  },
+
+  /** Save a HO Basic evaluation as draft. Backend: POST `/HoBasic/draft/{user}` */
+  postHoBasicDraft: async (
+    userId: number | string,
+    submission: EvaluationPayload | Record<string, unknown>
+  ): Promise<any> => {
+    const response = await api.post(`/HoBasic/draft/${userId}`, submission);
+    return response.data;
+  },
+
+  /** Save a Branch Basic evaluation as draft. Backend: POST `/BranchBasic/draft/{user}` */
+  postBranchBasicDraft: async (
+    userId: number | string,
+    submission: EvaluationPayload | Record<string, unknown>
+  ): Promise<any> => {
+    const response = await api.post(
+      `/BranchBasic/draft/${userId}`,
+      submission
+    );
+    return response.data;
+  },
+
+  /** Save a Branch Rank & File evaluation as draft. Backend: POST `/BranchRankNFile/draft/{user}` */
+  postBranchRankNFileDraft: async (
+    userId: number | string,
+    submission: EvaluationPayload | Record<string, unknown>
+  ): Promise<any> => {
+    const response = await api.post(
+      `/BranchRankNFile/draft/${userId}`,
+      submission
+    );
+    return response.data;
+  },
+
+  /** Save an Area Manager evaluation as draft. Backend: POST `/BranchBasicAreaManager/draft/{user}` */
+  postBranchBasicAreaManagerDraft: async (
+    userId: number | string,
+    submission: EvaluationPayload | Record<string, unknown>
+  ): Promise<any> => {
+    const response = await api.post(
+      `/BranchBasicAreaManager/draft/${userId}`,
+      submission
+    );
+    return response.data;
+  },
+
+  /**
+   * Save an in-progress evaluation as draft using the matching form endpoint.
+   */
+  postEvaluationDraft: async (
+    evaluationType: ResubmitEvaluationType,
+    userId: number | string,
+    submission: EvaluationPayload | Record<string, unknown>
+  ): Promise<any> => {
+    switch (evaluationType) {
+      case "rankNfile":
+        return apiService.postHoRankNFileDraft(userId, submission);
+      case "basic":
+        return apiService.postHoBasicDraft(userId, submission);
+      case "branchRankNfile":
+        return apiService.postBranchRankNFileDraft(userId, submission);
+      case "branchBasic":
+        return apiService.postBranchBasicDraft(userId, submission);
+      case "branchBasicAreaManager":
+        return apiService.postBranchBasicAreaManagerDraft(userId, submission);
+      default: {
+        const _exhaustive: never = evaluationType;
+        throw new Error(`Unknown evaluation draft type: ${_exhaustive}`);
+      }
+    }
+  },
+
   // Get evaluations by authenticated evaluator
   getEvalAuthEvaluator: async (
     search: string,

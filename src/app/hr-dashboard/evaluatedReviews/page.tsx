@@ -73,7 +73,7 @@ import {
   getReviewRowClassName,
   getViewEvaluationErrorMessage,
   getDeleteEvaluationErrorMessage,
-  isReviewPendingEditableByEvaluator,
+  isReviewDraft,
   QUARTER_LATE_LEGEND_LABEL,
 } from "@/components/evaluation/evaluationRecordsShared";
 
@@ -735,12 +735,8 @@ export default function OverviewTab() {
   };
 
   const handleEditEvaluation = async (review: Review) => {
-    if (
-      !isReviewPendingEditableByEvaluator(
-        review as EvaluationRecordReview,
-        user?.id
-      )
-    ) {
+    const asReview = review as EvaluationRecordReview;
+    if (!isReviewDraft(asReview)) {
       return;
     }
 
@@ -1463,9 +1459,8 @@ export default function OverviewTab() {
                               deleting={
                                 isDeleting && reviewToDelete?.id === review.id
                               }
-                              allowPendingEditByCurrentUser={isReviewPendingEditableByEvaluator(
-                                review as EvaluationRecordReview,
-                                user?.id
+                              allowDraftEdit={isReviewDraft(
+                                review as EvaluationRecordReview
                               )}
                             />
                           </TableCell>
@@ -1624,6 +1619,7 @@ export default function OverviewTab() {
           isOpen={isViewResultsModalOpen}
           submissionId={viewSubmissionId}
           submission={null}
+          loadTimeoutMs={4500}
           onLoadErrorAction={(message) => {
             setEvaluationActionError({
               title: "Unable to Open Evaluation",

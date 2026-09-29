@@ -6,6 +6,7 @@ import {
 import { buildResubmitJsonPayload } from "@/lib/evaluationResubmitPayload";
 import { isSubmissionResubmitAllowed } from "@/lib/evaluationSubmissionRecord";
 import { EvaluationPayload } from "@/components/evaluation/types";
+import { buildEvaluationSavePayload } from "@/lib/evaluationDraftSave";
 
 export type { EvaluationResubmitType as HoResubmitType } from "@/lib/evaluationEditTypes";
 
@@ -29,9 +30,11 @@ export async function submitEvaluationForm(
     );
   }
 
+  const payload = buildEvaluationSavePayload(form);
+
   await apiService.resubmitEvaluation(
     editSession.submissionId,
-    buildResubmitJsonPayload(form, editSession.sourceRecord),
+    buildResubmitJsonPayload(payload, editSession.sourceRecord),
     editSession.resubmitType
   );
 }

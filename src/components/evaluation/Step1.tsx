@@ -14,6 +14,8 @@ import {
 import { ChevronDownIcon } from "lucide-react";
 import { format } from "date-fns";
 import { EvaluationPayload } from "./types";
+import { ReviewTypeOthersCustomInput } from "./ReviewTypeOthersCustomInput";
+import { toDateInputValue } from "@/lib/dateInputValue";
 import {
   getQuarterlyReviewStatus,
   getCurrentYear,
@@ -202,23 +204,22 @@ export default function Step1({
 
   // Auto-populate Date Hired from employee data
   useEffect(() => {
-    if (employee && !data.hireDate) {
-      const dateHired = (employee as any).date_hired || (employee as any).dateHired || (employee as any).hireDate;
-      if (dateHired) {
-        try {
-          // Convert to YYYY-MM-DD format for date input
-          const date = new Date(dateHired);
-          if (!isNaN(date.getTime())) {
-            const formattedDate = date.toISOString().split("T")[0];
-            updateDataAction({ hireDate: formattedDate });
-          }
-        } catch (error) {
-          console.error("Error parsing date_hired:", error);
-        }
-      }
+    if (!employee) return;
+    // Treat missing/unparseable values as empty so edit reload can still fill.
+    if (toDateInputValue(data.hireDate)) return;
+
+    const dateHired =
+      (employee as { date_hired?: unknown }).date_hired ||
+      (employee as { dateHired?: unknown }).dateHired ||
+      (employee as { hireDate?: unknown }).hireDate;
+    if (!dateHired) return;
+
+    const formattedDate = toDateInputValue(dateHired);
+    if (formattedDate) {
+      updateDataAction({ hireDate: formattedDate });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employee?.id]);
+  }, [employee?.id, data.hireDate]);
 
   // Check for existing quarterly reviews when employee changes
   useEffect(() => {
@@ -794,8 +795,7 @@ export default function Step1({
                     (data.reviewTypeOthersCustom !== "" &&
                       data.reviewTypeOthersCustom !== null &&
                       data.reviewTypeOthersCustom.trim() !== "")) && (
-                    <input
-                      type="text"
+                    <ReviewTypeOthersCustomInput
                       value={data.reviewTypeOthersCustom || ""}
                       disabled={
                         data.reviewTypeProbationary !== "" ||
@@ -803,24 +803,14 @@ export default function Step1({
                         data.reviewTypeOthersImprovement === true ||
                         !isOthersCustomEnabled
                       }
-                      onChange={(e) => {
-                        // Always update the value when user types
+                      onChange={(value) => {
                         updateDataAction({
-                          reviewTypeOthersCustom: e.target.value,
+                          reviewTypeOthersCustom: value,
                           reviewTypeOthersImprovement: false,
                           reviewTypeProbationary: "",
                           reviewTypeRegular: "",
                         });
                       }}
-                      className={`flex-1 px-2 py-1 text-sm border border-gray-300 rounded ${
-                        data.reviewTypeProbationary !== "" ||
-                        data.reviewTypeRegular !== "" ||
-                        data.reviewTypeOthersImprovement === true ||
-                        !isOthersCustomEnabled
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-white"
-                      }`}
-                      placeholder="Enter custom review type"
                     />
                   )}
                 </div>
@@ -936,7 +926,7 @@ export default function Step1({
             <Input
               id="hireDate"
               type="date"
-              value={data.hireDate || ""}
+              value={toDateInputValue(data.hireDate)}
               readOnly
               className="bg-gray-100 border-gray-300 cursor-not-allowed pointer-events-none"
             />
@@ -970,20 +960,10 @@ export default function Step1({
                 <Label className="text-sm text-gray-600">From:</Label>
                 <Input
                   type="date"
-                  value={
-                    data.coverageFrom
-                      ? typeof data.coverageFrom === "string"
-                        ? data.coverageFrom
-                        : new Date(data.coverageFrom).toISOString().split("T")[0]
-                      : ""
-                  }
+                  value={toDateInputValue(data.coverageFrom)}
                   onChange={(e) => {
                     const fromDate = e.target.value;
-                    const toDate = data.coverageTo
-                      ? typeof data.coverageTo === "string"
-                        ? data.coverageTo
-                        : new Date(data.coverageTo).toISOString().split("T")[0]
-                      : null;
+                    const toDate = toDateInputValue(data.coverageTo) || null;
 
                     // Always update the form data so parent validation can catch it
                     updateDataAction({
@@ -999,34 +979,18 @@ export default function Step1({
                     }
 
                     // Validate: From date should not be before Date Hired
-                    if (data.hireDate && fromDate) {
-                      const hireDateStr = typeof data.hireDate === "string"
-                        ? data.hireDate
-                        : new Date(data.hireDate).toISOString().split("T")[0];
-                      if (fromDate < hireDateStr) {
-                        setCoverageError(
-                          "Performance Coverage cannot start before Date Hired"
-                        );
-                        return;
-                      }
+                    const hireDateStr = toDateInputValue(data.hireDate);
+                    if (hireDateStr && fromDate && fromDate < hireDateStr) {
+                      setCoverageError(
+                        "Performance Coverage cannot start before Date Hired"
+                      );
+                      return;
                     }
 
                     setCoverageError("");
                   }}
-                  min={
-                    data.hireDate
-                      ? typeof data.hireDate === "string"
-                        ? data.hireDate
-                        : new Date(data.hireDate).toISOString().split("T")[0]
-                      : undefined
-                  }
-                  max={
-                    data.coverageTo
-                      ? typeof data.coverageTo === "string"
-                        ? data.coverageTo
-                        : new Date(data.coverageTo).toISOString().split("T")[0]
-                      : undefined
-                  }
+                  min={toDateInputValue(data.hireDate) || undefined}
+                  max={toDateInputValue(data.coverageTo) || undefined}
                   className={`w-full bg-yellow-100 border-yellow-300 hover:bg-yellow-200 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0 ${
                     coverageError && !data.coverageFrom
                       ? "border-red-500"
@@ -1040,20 +1004,10 @@ export default function Step1({
                 <Label className="text-sm text-gray-600">To:</Label>
                 <Input
                   type="date"
-                  value={
-                    data.coverageTo
-                      ? typeof data.coverageTo === "string"
-                        ? data.coverageTo
-                        : new Date(data.coverageTo).toISOString().split("T")[0]
-                      : ""
-                  }
+                  value={toDateInputValue(data.coverageTo)}
                   onChange={(e) => {
                     const toDate = e.target.value;
-                    const fromDate = data.coverageFrom
-                      ? typeof data.coverageFrom === "string"
-                        ? data.coverageFrom
-                        : new Date(data.coverageFrom).toISOString().split("T")[0]
-                      : null;
+                    const fromDate = toDateInputValue(data.coverageFrom) || null;
 
                     // Always update the form data so parent validation can catch it
                     updateDataAction({
@@ -1070,13 +1024,7 @@ export default function Step1({
 
                     setCoverageError("");
                   }}
-                  min={
-                    data.coverageFrom
-                      ? typeof data.coverageFrom === "string"
-                        ? data.coverageFrom
-                        : new Date(data.coverageFrom).toISOString().split("T")[0]
-                      : undefined
-                  }
+                  min={toDateInputValue(data.coverageFrom) || undefined}
                   className={`w-full bg-yellow-100 border-yellow-300 hover:bg-yellow-200 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0 ${
                     coverageError && !data.coverageTo ? "border-red-500" : ""
                   }`}
@@ -1098,8 +1046,15 @@ export default function Step1({
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
                 <span className="text-sm text-blue-800 font-medium">
                   Performance Period:{" "}
-                  {format(new Date(data.coverageFrom), "MMM dd, yyyy")} -{" "}
-                  {format(new Date(data.coverageTo), "MMM dd, yyyy")}
+                  {format(
+                    new Date(`${toDateInputValue(data.coverageFrom)}T12:00:00`),
+                    "MMM dd, yyyy"
+                  )}{" "}
+                  -{" "}
+                  {format(
+                    new Date(`${toDateInputValue(data.coverageTo)}T12:00:00`),
+                    "MMM dd, yyyy"
+                  )}
                 </span>
               </div>
             )}

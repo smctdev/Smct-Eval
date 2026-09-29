@@ -394,6 +394,16 @@ function RegisterPage() {
       return;
     }
 
+    if (signaturePadRef.current?.isLowSignaturePending?.()) {
+      setSignatureError(true);
+      showAlert(
+        "Signature Too Low",
+        "Your signature is too low. Redraw it on the center cross-hair, or tap Proceed anyway and confirm before saving.",
+        "warning"
+      );
+      return;
+    }
+
     setIsRegisterButtonClicked(true);
     // Then send the POST request with the user registration data
 
@@ -509,7 +519,7 @@ function RegisterPage() {
               />
               <stop
                 offset="30%"
-                style={{ stopColor: "rgba(255,255,255,0)", stopOpacity: 0 }}
+                style={{ stopColor: "rgba(255, 255, 255, 0)", stopOpacity: 0 }}
               />
               <stop
                 offset="60%"

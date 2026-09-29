@@ -1,4 +1,5 @@
 import { EvaluationPayload } from "@/components/evaluation/types";
+import { pickBestDateInputValue } from "@/lib/dateInputValue";
 import {
   type EvaluationScoreItem,
   type EvaluationSubmissionData,
@@ -121,10 +122,7 @@ function pickKnownFields(
     }
   };
 
-  assign("hireDate", "hireDate", "hire_date");
   assign("rating", "rating", "performanceScore", "performance_score");
-  assign("coverageFrom", "coverageFrom", "coverage_from");
-  assign("coverageTo", "coverageTo", "coverage_to");
   assign(
     "reviewTypeProbationary",
     "reviewTypeProbationary",
@@ -170,10 +168,42 @@ export function submissionToEvaluationPayload(
   const evaluationData =
     submission.evaluationData ?? submission.evaluation_data ?? {};
 
+  // Top-level DB columns can be start-of-month; prefer nested form/JSON dates.
   const base = {
-    ...pickKnownFields(evaluationData),
     ...pickKnownFields(submission),
+    ...pickKnownFields(evaluationData),
   };
+
+  const evalRec = evaluationData as Record<string, unknown>;
+  const subRec = submission as Record<string, unknown>;
+  const employee = (subRec.employee ?? null) as Record<string, unknown> | null;
+
+  // Prefer exact calendar day across camelCase / snake_case / nested sources.
+  // Only assign when non-empty — empty string would wipe Step1 auto-fill from employee.
+  const hireDate = pickBestDateInputValue(
+    evalRec.hireDate,
+    evalRec.hire_date,
+    subRec.hireDate,
+    subRec.hire_date,
+    employee?.date_hired,
+    employee?.dateHired,
+    employee?.hireDate
+  );
+  const coverageFrom = pickBestDateInputValue(
+    evalRec.coverageFrom,
+    evalRec.coverage_from,
+    subRec.coverageFrom,
+    subRec.coverage_from
+  );
+  const coverageTo = pickBestDateInputValue(
+    evalRec.coverageTo,
+    evalRec.coverage_to,
+    subRec.coverageTo,
+    subRec.coverage_to
+  );
+  if (hireDate) base.hireDate = hireDate;
+  if (coverageFrom) base.coverageFrom = coverageFrom;
+  if (coverageTo) base.coverageTo = coverageTo;
 
   return {
     ...base,
