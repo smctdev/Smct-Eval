@@ -55,6 +55,7 @@ interface Review {
   created_at: string;
   rating: number;
   status: string;
+  employee_branch_code?: string | null;
 }
 
 export default function OverviewTab() {
@@ -706,11 +707,7 @@ export default function OverviewTab() {
                             </div>
                           </TableCell>
                           <TableCell className="px-6 py-3 text-sm text-gray-600">
-                            {getEmployeeBranchCodeDisplay(
-                              review.employee,
-                              branchesData,
-                              refreshing
-                            )}
+                          {review.employee_branch_code}
                           </TableCell>
                           <TableCell className="px-6 py-3">
                             {(() => {

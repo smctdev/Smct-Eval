@@ -56,8 +56,6 @@ import {
 import { getCachedYears } from "@/lib/referenceDataCache";
 import { cn } from "@/lib/utils";
 import { getMyEvalAsEvaluatorCount } from "@/lib/evaluatorEvalListResponse";
-import { useBranchesForEvaluation } from "@/hooks/useBranchesForEvaluation";
-import { getEmployeeBranchCodeDisplay } from "@/components/evaluation/employeeBranchLabel";
 import { isSubmissionResubmitAllowed } from "@/lib/evaluationSubmissionRecord";
 import {
   type EvaluationRecordReview,
@@ -91,7 +89,9 @@ import {
   ratingPillClass,
 } from "@/components/evaluation/evaluationRecordsShared";
 
-type Review = EvaluationRecordReview;
+type Review = EvaluationRecordReview & {
+  employee_branch_code?: string | null;
+};
 
 const EVALUATION_RECORDS_TABS = [
   { id: "all", label: "All Records" },
@@ -321,8 +321,6 @@ const REJECT_DRAFT_NOTE_MAX_LENGTH = 20;
 export default function OverviewTab() {
   const { user } = useAuth();
   const isMobileViewport = useMobileViewport();
-  const { branchOptions, isLoading: branchListLoading } =
-    useBranchesForEvaluation();
 
   const [evaluations, setEvaluations] = useState<Review[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -1596,11 +1594,7 @@ export default function OverviewTab() {
                           </TableCell>
                           <TableCell className="hidden text-gray-600 md:table-cell">
                             <span className="block max-w-[5rem] truncate sm:max-w-none">
-                              {getEmployeeBranchCodeDisplay(
-                                review.employee,
-                                branchOptions,
-                                branchListLoading
-                              )}
+                              {review.employee_branch_code || "—"}
                             </span>
                           </TableCell>
                           <TableCell>
