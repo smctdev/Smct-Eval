@@ -54,7 +54,7 @@ export default function EvaluationTypeModal({
 
   // Check if BOTH conditions are met:
   // 1. Logged-in user is AVP - Sales & Marketing
-  // 2. Employee being evaluated is Area Manager
+  // 2. Employee being evaluated is Area Manager or Cluster Head
   const showAreaManagerOption = (() => {
     // Check logged-in user's position
     const userPositionName = (
@@ -70,7 +70,9 @@ export default function EvaluationTypeModal({
       employee?.positions?.name ||
       ""
     ).toLowerCase();
-    const isEmployeeAreaManager = employeePositionName.includes("area manager");
+    const isEmployeeAreaManager =
+      employeePositionName.includes("area manager") ||
+      employeePositionName.includes("cluster head");
 
     // Both conditions must be true
     return isUserAVP && isEmployeeAreaManager;
