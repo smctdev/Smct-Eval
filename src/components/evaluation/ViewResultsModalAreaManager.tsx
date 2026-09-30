@@ -11,7 +11,7 @@ import { useUser } from "@/contexts/UserContext";
 import { getEvaluatorDisplayName } from "@/lib/supervisorDisplay";
 import { CONFIG } from "../../../config/config";
 import apiService from "@/lib/apiService";
-import { getEmployeeBranchCodeDisplay } from "./employeeBranchLabel";
+import { getRecordEmployeeBranchCode } from "./employeeBranchLabel";
 import { ReviewTypeOthersCustomInput } from "./ReviewTypeOthersCustomInput";
 import { computeOverallAssessmentFromSubmission } from "@/lib/evaluationOverallScore";
 import ViewResultsOverallAssessmentTable, { ViewResultsOverallPerformanceSummary } from "./ViewResultsOverallAssessmentTable";
@@ -2306,9 +2306,7 @@ export default function ViewResultsModalAreaManager({
                         className="text-gray-900 print-value"
                         style={{ fontSize: "11px" }}
                       >
-                        {submission?.employee
-                          ? getEmployeeBranchCodeDisplay(submission.employee, null, false)
-                          : "Not specified"}
+                        {getRecordEmployeeBranchCode(submission)}
                       </p>
                     </div>
                     <div className="print-info-row">

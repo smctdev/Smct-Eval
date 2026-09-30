@@ -81,6 +81,7 @@ interface Review {
   id: number;
   employee: any;
   evaluator: any;
+  employee_branch_code?: string | null;
   reviewTypeProbationary: number | string;
   reviewTypeRegular: number | string;
   reviewTypeOthersImprovement?: boolean | number;
@@ -1377,7 +1378,11 @@ export default function OverviewTab() {
                           </TableCell>
                           <TableCell className="hidden text-gray-600 md:table-cell">
                             <span className="block max-w-[5rem] truncate sm:max-w-none">
-                              {getEmployeeBranchCode(review.employee)}
+                              {String(
+                                review.employee_branch_code ??
+                                  review.employee?.employee_branch_code ??
+                                  ""
+                              ).trim() || "—"}
                             </span>
                           </TableCell>
                           <TableCell>

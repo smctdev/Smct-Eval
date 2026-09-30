@@ -199,6 +199,22 @@ export function getEmployeeBranchWelcomeDisplay(
   return getEmployeeBranchLabel(employee, branchOptions);
 }
 
+/** Branch code stored on an evaluation record (`employee_branch_code`). */
+export function getRecordEmployeeBranchCode(
+  record:
+    | {
+        employee_branch_code?: unknown;
+        employee?: { employee_branch_code?: unknown } | null;
+      }
+    | null
+    | undefined
+): string {
+  const raw =
+    record?.employee_branch_code ?? record?.employee?.employee_branch_code;
+  const text = raw == null ? "" : String(raw).trim();
+  return text || "Not specified";
+}
+
 /** Branch column display: prefer branch_code (e.g. "ALAD"), fallback to resolved labels. */
 export function getEmployeeBranchCodeDisplay(
   employee: User | null | undefined,
