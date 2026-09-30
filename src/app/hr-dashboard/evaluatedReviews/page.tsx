@@ -413,6 +413,52 @@ export default function OverviewTab() {
     return employee.branch_name || "N/A";
   };
 
+  const asBranchCodeText = (value: unknown): string => {
+    if (value == null) return "";
+    if (typeof value === "string" || typeof value === "number") {
+      const text = String(value).trim();
+      if (!text || text.toLowerCase() === "null" || text.toLowerCase() === "undefined") {
+        return "";
+      }
+      return text;
+    }
+    return "";
+  };
+
+  const branchCodeFromObject = (value: unknown): string => {
+    if (!value || typeof value !== "object") return asBranchCodeText(value);
+    const record = value as Record<string, unknown>;
+    return (
+      asBranchCodeText(record.employee_branch_code) ||
+      asBranchCodeText(record.employeeBranchCode) ||
+      asBranchCodeText(record.branch_code) ||
+      asBranchCodeText(record.branchCode) ||
+      asBranchCodeText(record.code)
+    );
+  };
+
+  /** Copy `employee_branch_code` onto each table row before render. */
+  const withEmployeeBranchCode = (row: Review): Review => {
+    const record = row as Review & Record<string, unknown>;
+    const employee = (record.employee ?? {}) as Record<string, unknown>;
+    const branches = Array.isArray(employee.branches)
+      ? employee.branches[0]
+      : employee.branches;
+
+    const code =
+      asBranchCodeText(record.employee_branch_code) ||
+      asBranchCodeText(record.employeeBranchCode) ||
+      asBranchCodeText(employee.employee_branch_code) ||
+      asBranchCodeText(employee.employeeBranchCode) ||
+      branchCodeFromObject(employee.branch) ||
+      branchCodeFromObject(branches);
+
+    return {
+      ...row,
+      employee_branch_code: code || null,
+    };
+  };
+
   const loadEvaluations = async (
     searchValue: string,
     status: string,
@@ -459,7 +505,9 @@ export default function OverviewTab() {
           normalizedRating,
           normalizedBranch
         );
-        const serverRows: Review[] = response?.data ?? [];
+        const serverRows: Review[] = (response?.data ?? []).map((row: Review) =>
+          withEmployeeBranchCode(row)
+        );
         const selectedBranchIds = new Set(
           branchIds.map((id) => String(id).trim()).filter(Boolean)
         );
@@ -1378,11 +1426,7 @@ export default function OverviewTab() {
                           </TableCell>
                           <TableCell className="hidden text-gray-600 md:table-cell">
                             <span className="block max-w-[5rem] truncate sm:max-w-none">
-                              {String(
-                                review.employee_branch_code ??
-                                  review.employee?.employee_branch_code ??
-                                  ""
-                              ).trim() || "—"}
+                              {review.employee_branch_code?.trim() || "—"}
                             </span>
                           </TableCell>
                           <TableCell>
