@@ -40,6 +40,8 @@ export function formatEvaluationStatusLabel(status: string): {
       return { short: "✕ Rej.", full: "✕ Rejected" };
     case "completed":
       return { short: "✓ Done", full: "✓ Completed" };
+    case "draft":
+      return { short: "Draft", full: "Draft" };
     default:
       return { short: s || "—", full: s || "—" };
   }
@@ -51,6 +53,8 @@ export function getEvaluationStatusBadgeClass(status: string): string {
   switch (s) {
     case "completed":
       return "bg-green-100 text-green-800";
+    case "draft":
+      return "bg-slate-100 text-slate-800";
     case "pending":
       return "bg-yellow-100 text-yellow-800";
     case "pending_approval_1":

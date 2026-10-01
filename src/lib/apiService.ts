@@ -274,7 +274,7 @@ export const apiService = {
     }));
   },
 
-  /** `branch` may be a comma-separated list of branch ids when filtering by multiple branches. */
+  /** `status` is sent as-is (`draft`, `pending`, `completed`). Empty means all statuses. `branch` may be a comma-separated list of branch ids when filtering by multiple branches. */
   getSubmissions: async (
     searchTerm?: string,
     page?: number,
@@ -1026,7 +1026,11 @@ export const apiService = {
     }
   },
 
-  // Get evaluations by authenticated evaluator
+  /**
+   * All Records for the signed-in evaluator.
+   * Backend: GET `/getEvalAuthEvaluator`
+   * `status` is sent as-is (`draft`, `pending`, `completed`, and the approval statuses). Empty means all statuses.
+   */
   getEvalAuthEvaluator: async (
     search: string,
     page: number,

@@ -444,9 +444,12 @@ export default function OverviewTab() {
       );
     }
 
-    return EVALUATION_STATUS_FILTER_OPTIONS.filter((option) =>
-      isStatusOnAllRecordsTab(option.value)
-    );
+    return [
+      { value: "draft", label: "Draft" },
+      ...EVALUATION_STATUS_FILTER_OPTIONS.filter((option) =>
+        isStatusOnAllRecordsTab(option.value)
+      ),
+    ];
   }, [activeRecordsTab]);
 
   const displayedEvaluations = useMemo(

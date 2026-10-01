@@ -388,6 +388,7 @@ export default function OverviewTab() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="0">All Status</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
                     <SelectItem value="pending">
                       Pending Verification
                     </SelectItem>
@@ -763,6 +764,8 @@ export default function OverviewTab() {
                               className={
                                 review.status === "completed"
                                   ? "bg-green-100 text-green-800"
+                                  : review.status === "draft"
+                                  ? "bg-slate-100 text-slate-800"
                                   : review.status === "pending"
                                   ? "bg-yellow-100 text-yellow-800"
                                   : "bg-yellow-100 text-yellow-800"
@@ -770,6 +773,8 @@ export default function OverviewTab() {
                             >
                               {review.status === "completed"
                                 ? `✓ ${review.status}`
+                                : review.status === "draft"
+                                ? "Draft"
                                 : review.status === "pending"
                                 ? `⏳ ${review.status}`
                                 : review.status}
