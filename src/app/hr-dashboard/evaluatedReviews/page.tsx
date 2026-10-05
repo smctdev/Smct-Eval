@@ -55,6 +55,7 @@ import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { useDialogAnimation } from "@/hooks/useDialogAnimation";
 import { cn } from "@/lib/utils";
 import { toastMessages } from "@/lib/toastMessages";
+import { normalizeEvaluationStatus } from "@/lib/evaluationStatus";
 import { getEmployeeBranchCodeDisplay } from "@/components/evaluation/employeeBranchLabel";
 import {
   EvalRecordSignBadge,
@@ -203,6 +204,22 @@ function formatReviewStatusLabel(status: string): { short: string; full: string 
   if (s === "pending") return { short: "⏳ Pend.", full: `⏳ ${s}` };
   if (s === "draft") return { short: "Draft", full: "Draft" };
   return { short: s, full: s };
+}
+
+function isAllStatusFilter(value: string): boolean {
+  return value === "" || value === "0";
+}
+
+/** Keep the table aligned with the Approval Status select when the API ignores `status`. */
+function matchesApprovalStatusFilter(
+  reviewStatus: unknown,
+  statusFilter: string
+): boolean {
+  if (isAllStatusFilter(statusFilter)) return true;
+  return (
+    normalizeEvaluationStatus(reviewStatus) ===
+    normalizeEvaluationStatus(statusFilter)
+  );
 }
 
 export default function OverviewTab() {
@@ -468,7 +485,7 @@ export default function OverviewTab() {
     rating: string,
     branchIds: string[]
   ) => {
-    const normalizedStatus = status === "0" ? "" : status;
+    const normalizedStatus = isAllStatusFilter(status) ? "" : status;
     const normalizedQuarter = quarter === "0" ? "" : quarter;
     const normalizedYear = year === "0" ? "" : year;
     const normalizedRating = rating === "0" ? "" : rating;
@@ -494,6 +511,8 @@ export default function OverviewTab() {
       return;
     }
 
+    submissionsInFlightKeyRef.current = requestKey;
+
     const requestPromise = (async () => {
       try {
         const response = await clientDataService.getSubmissions(
@@ -506,6 +525,12 @@ export default function OverviewTab() {
           normalizedRating,
           normalizedBranch
         );
+
+        // A newer filter/page request started — ignore this response.
+        if (submissionsInFlightKeyRef.current !== requestKey) {
+          return;
+        }
+
         const serverRows: Review[] = (response?.data ?? []).map((row: Review) =>
           withEmployeeBranchCode(row)
         );
@@ -515,7 +540,7 @@ export default function OverviewTab() {
 
         // Fallback: if API still treats `branch` as single value, apply client-side
         // filtering when multiple branches are selected so UI matches selection.
-        const clientFilteredRows =
+        const branchFilteredRows =
           selectedBranchIds.size > 1
             ? serverRows.filter((review) => {
                 const employee: any = (review as any)?.employee ?? {};
@@ -576,6 +601,20 @@ export default function OverviewTab() {
               })
             : serverRows;
 
+        // Fallback: keep only rows that match the selected Approval Status.
+        // Backend /allEvaluations sometimes ignores or mis-applies `status`.
+        const clientFilteredRows = branchFilteredRows.filter((review) =>
+          matchesApprovalStatusFilter(review.status, normalizedStatus)
+        );
+        const removedByStatus = Math.max(
+          0,
+          branchFilteredRows.length - clientFilteredRows.length
+        );
+
+        if (submissionsInFlightKeyRef.current !== requestKey) {
+          return;
+        }
+
         setEvaluations(clientFilteredRows);
         if (selectedBranchIds.size > 1) {
           const localTotal = clientFilteredRows.length;
@@ -583,16 +622,20 @@ export default function OverviewTab() {
           setTotalPages(Math.max(1, Math.ceil(localTotal / itemsPerPage)));
           setPerPage(itemsPerPage);
         } else {
-          setOverviewTotal(response?.total ?? 0);
+          setOverviewTotal(
+            Math.max(0, (response?.total ?? 0) - removedByStatus)
+          );
           setTotalPages(response?.last_page ?? 1);
           setPerPage(response?.per_page ?? itemsPerPage);
         }
       } catch (error) {
         console.error("Error loading evaluations:", error);
-        setEvaluations([]);
-        setOverviewTotal(0);
-        setTotalPages(1);
-        setPerPage(itemsPerPage);
+        if (submissionsInFlightKeyRef.current === requestKey) {
+          setEvaluations([]);
+          setOverviewTotal(0);
+          setTotalPages(1);
+          setPerPage(itemsPerPage);
+        }
       } finally {
         if (submissionsInFlightKeyRef.current === requestKey) {
           submissionsInFlightKeyRef.current = null;
@@ -601,7 +644,6 @@ export default function OverviewTab() {
       }
     })();
 
-    submissionsInFlightKeyRef.current = requestKey;
     submissionsInFlightPromiseRef.current = requestPromise;
     await requestPromise;
   };
@@ -890,7 +932,7 @@ export default function OverviewTab() {
                   Approval Status
                 </Label>
                 <Select
-                  value={statusFilter}
+                  value={statusFilter || "0"}
                   onValueChange={(value) => setStatusFilter(value)}
                 >
                   <SelectTrigger
