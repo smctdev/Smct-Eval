@@ -814,6 +814,24 @@ export const apiService = {
     return response.data;
   },
 
+  /**
+   * Update existing branch.
+   * Backend: POST `/updateBranch/{branch}`
+   * Body: branch_code, branch_name, branch, acronym (same as addBranch).
+   */
+  updateBranch: async (
+    branch: string | number,
+    payload: {
+      branch_code: string;
+      branch_name: string;
+      branch: string;
+      acronym: string;
+    }
+  ): Promise<any> => {
+    const response = await api.post(`/updateBranch/${branch}`, payload);
+    return response.data;
+  },
+
   // Get total employees under a department
   getTotalEmployeesDepartments: async (
     searchValue: string,
@@ -833,6 +851,21 @@ export const apiService = {
   // Add new department
   addDepartment: async (name: string): Promise<any> => {
     const response = await api.post("/addDepartment", {
+      department_name: name,
+    });
+    return response.data;
+  },
+
+  /**
+   * Update existing department.
+   * Backend: POST `/updateDepartment/{department}`
+   * Body: department_name (same as addDepartment).
+   */
+  updateDepartment: async (
+    department: string | number,
+    name: string
+  ): Promise<any> => {
+    const response = await api.post(`/updateDepartment/${department}`, {
       department_name: name,
     });
     return response.data;

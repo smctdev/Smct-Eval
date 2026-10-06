@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, Users } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -30,7 +30,6 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Users } from "lucide-react";
 import { toastMessages } from "@/lib/toastMessages";
 import { useDialogAnimation } from "@/hooks/useDialogAnimation";
 import apiService from "@/lib/apiService";
@@ -119,6 +118,8 @@ export default function DepartmentsTab() {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [branchToEdit, setBranchToEdit] = useState<Branches | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [branchesToDelete, setBranchesToDelete] = useState<Branches | null>(
     null
@@ -134,6 +135,7 @@ export default function DepartmentsTab() {
   const [perPage, setPerPage] = useState(0);
   const [isDeletingBranches, setIsDeletingBranches] = useState(false);
   const [isAddingBranch, setIsAddingBranch] = useState(false);
+  const [isUpdatingBranch, setIsUpdatingBranch] = useState(false);
   const [isAlertDialogOpen, setIsAlertDialogOpen] = useState(false);
   const [branchWithEmployees, setBranchWithEmployees] = useState<Branches | null>(null);
   const [isEmployeesModalOpen, setIsEmployeesModalOpen] = useState(false);
@@ -157,7 +159,7 @@ export default function DepartmentsTab() {
   });
 
   useEffect(() => {
-    if (!isAddModalOpen) {
+    if (!isAddModalOpen && !isEditModalOpen) {
       setFormData({
         branch_code: "",
         branch_name: "",
@@ -165,8 +167,21 @@ export default function DepartmentsTab() {
         acronym: "",
       });
       setErrors({});
+      setBranchToEdit(null);
     }
-  }, [isAddModalOpen]);
+  }, [isAddModalOpen, isEditModalOpen]);
+
+  const openEditBranch = (branch: Branches) => {
+    setBranchToEdit(branch);
+    setFormData({
+      branch_code: branch.branch_code ?? "",
+      branch_name: branch.branch_name ?? "",
+      branch: branch.branch ?? "",
+      acronym: branch.acronym ?? "",
+    });
+    setErrors({});
+    setIsEditModalOpen(true);
+  };
 
   const validation = () => {
     const newErrors: Record<string, string> = {};
@@ -363,6 +378,39 @@ export default function DepartmentsTab() {
           setErrors(backendErrors);
         }
       }
+    }
+  };
+
+  const handleUpdateBranch = async () => {
+    if (!branchToEdit) return;
+    if (!validation()) return;
+
+    try {
+      await apiService.updateBranch(branchToEdit.id, formData);
+      clearBranchUsersCache();
+      await loadData(debouncedSearchTerm, currentPage, itemsPerPage);
+      toastMessages.generic.success(
+        "Branch Updated",
+        `"${formData.branch_name}" has been updated.`
+      );
+      setErrors({});
+      setIsEditModalOpen(false);
+    } catch (error: any) {
+      if (error.response?.data?.errors) {
+        const backendErrors: Record<string, string> = {};
+        Object.keys(error.response.data.errors).forEach((field) => {
+          backendErrors[field] = error.response.data.errors[field][0];
+        });
+        setErrors(backendErrors);
+        return;
+      }
+
+      const backendMsg =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to update branch.";
+      toastMessages.generic.error("Error", String(backendMsg));
     }
   };
 
@@ -707,25 +755,41 @@ export default function DepartmentsTab() {
                                 <span className="min-w-0 flex-1 truncate pr-1">
                                   {branch.branch_name} / {branch.branch_code}
                                 </span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    if (headcounts.total > 0) {
-                                      setBranchWithEmployees(branch);
-                                      setIsAlertDialogOpen(true);
-                                    } else {
-                                      setBranchesToDelete(branch);
-                                      setIsDeleteModalOpen(true);
+                                <div className="flex shrink-0 items-center gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => openEditBranch(branch)}
+                                    disabled={
+                                      deletingBranchId !== null ||
+                                      isUpdatingBranch
                                     }
-                                  }}
-                                  disabled={deletingBranchId !== null}
-                                  aria-label={`Delete ${branch.branch_name}`}
-                                  className="h-9 w-9 shrink-0 touch-manipulation p-0 text-red-600 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                    aria-label={`Edit ${branch.branch_name}`}
+                                    className="h-9 w-9 touch-manipulation p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      if (headcounts.total > 0) {
+                                        setBranchWithEmployees(branch);
+                                        setIsAlertDialogOpen(true);
+                                      } else {
+                                        setBranchesToDelete(branch);
+                                        setIsDeleteModalOpen(true);
+                                      }
+                                    }}
+                                    disabled={deletingBranchId !== null}
+                                    aria-label={`Delete ${branch.branch_name}`}
+                                    className="h-9 w-9 touch-manipulation p-0 text-red-600 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </CardTitle>
                               <CardDescription className="truncate text-xs sm:text-sm">
                                 {branch.branch} · {branch.acronym}
@@ -1010,6 +1074,174 @@ export default function DepartmentsTab() {
                   </>
                 ) : (
                   "Add Branch"
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Branch Modal */}
+      <Dialog
+        open={isEditModalOpen}
+        onOpenChangeAction={(open) => {
+          setIsEditModalOpen(open);
+          if (!open) setBranchToEdit(null);
+        }}
+      >
+        <DialogContent className={`max-w-md p-6 ${dialogAnimationClass}`}>
+          <DialogHeader className="pb-4">
+            <DialogTitle>Edit Branch</DialogTitle>
+            <DialogDescription>
+              Update branch details for{" "}
+              {branchToEdit
+                ? `${branchToEdit.branch_name} / ${branchToEdit.branch_code}`
+                : "this branch"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 px-2">
+            <div className="space-y-2">
+              <Label htmlFor="editBranchName" className="text-sm font-medium">
+                Branch Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="editBranchName"
+                placeholder="Enter branch name"
+                value={formData.branch_name}
+                onChange={(e) =>
+                  handleInputChange(
+                    "branch_name",
+                    e.target.value.toLocaleUpperCase()
+                  )
+                }
+                style={{ textTransform: "uppercase" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    void handleUpdateBranch();
+                  }
+                }}
+                autoFocus
+              />
+              {errors?.branch_name && (
+                <p className="text-sm text-red-500">{errors?.branch_name}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editBranchCode" className="text-sm font-medium">
+                Branch Code
+              </Label>
+              <Input
+                id="editBranchCode"
+                placeholder="Enter branch code (optional)"
+                value={formData.branch_code}
+                onChange={(e) =>
+                  handleInputChange("branch_code", e.target.value.toUpperCase())
+                }
+                style={{ textTransform: "uppercase" }}
+              />
+              {errors?.branch_code && (
+                <p className="text-sm text-red-500">{errors?.branch_code}</p>
+              )}
+            </div>
+            <div className="w-full md:w-48 space-y-2">
+              <Label htmlFor="editBranchCompany" className="text-sm font-medium">
+                Branch
+              </Label>
+              <Select
+                value={formData.branch}
+                onValueChange={(value) => handleInputChange("branch", value)}
+              >
+                <SelectTrigger
+                  id="editBranchCompany"
+                  className="w-48 cursor-pointer"
+                >
+                  <SelectValue placeholder="Select branch" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Des Appliance Plaza, Inc.">
+                    Des Appliance Plaza, Inc.
+                  </SelectItem>
+                  <SelectItem value="Des Strong Motors, Inc.">
+                    Des Strong Motors, Inc.
+                  </SelectItem>
+                  <SelectItem value="Honda Des, Inc.">
+                    Honda Des, Inc.
+                  </SelectItem>
+                  <SelectItem value="Head Office">Head Office</SelectItem>
+                  <SelectItem value="Strong Moto Centrum, Inc.">
+                    Strong Moto Centrum, Inc.
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {errors?.branch && (
+                <p className="text-sm text-red-500">{errors?.branch}</p>
+              )}
+            </div>
+            <div className="w-full md:w-48 space-y-2 mb-2">
+              <Label htmlFor="editBranchAcronym" className="text-sm font-medium">
+                Acronym
+              </Label>
+              <Select
+                value={formData.acronym}
+                onValueChange={(value) => handleInputChange("acronym", value)}
+              >
+                <SelectTrigger
+                  id="editBranchAcronym"
+                  className="w-48 cursor-pointer"
+                >
+                  <SelectValue placeholder="Select acronym" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DAP">DAP</SelectItem>
+                  <SelectItem value="DSM">DSM</SelectItem>
+                  <SelectItem value="HD">HD</SelectItem>
+                  <SelectItem value="HO">HO</SelectItem>
+                  <SelectItem value="KIA">KIA</SelectItem>
+                  <SelectItem value="SMCT">SMCT</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors?.acronym && (
+                <p className="text-sm text-red-500">{errors?.acronym}</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="pt-6 px-2">
+            <div className="flex justify-end space-x-4 w-full">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setErrors({});
+                  setIsEditModalOpen(false);
+                }}
+                disabled={isUpdatingBranch}
+                className="cursor-pointer text-white bg-blue-600 hover:text-white hover:bg-blue-700 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={isUpdatingBranch || !branchToEdit}
+                className={`bg-green-600 hover:bg-green-700 text-white flex items-center gap-2
+    cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0
+    ${isUpdatingBranch ? "opacity-70 cursor-not-allowed hover:scale-100" : ""}
+  `}
+                onClick={async () => {
+                  setIsUpdatingBranch(true);
+                  try {
+                    await handleUpdateBranch();
+                  } finally {
+                    setIsUpdatingBranch(false);
+                  }
+                }}
+              >
+                {isUpdatingBranch ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
                 )}
               </Button>
             </div>

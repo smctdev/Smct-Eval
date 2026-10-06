@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, Users } from "lucide-react";
 
 import {
   Card,
@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Users } from "lucide-react";
 import { toastMessages } from "@/lib/toastMessages";
 import { useDialogAnimation } from "@/hooks/useDialogAnimation";
 import apiService from "@/lib/apiService";
@@ -73,6 +72,11 @@ export default function DepartmentsTab() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newDepartmentName, setNewDepartmentName] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [departmentToEdit, setDepartmentToEdit] = useState<Department | null>(
+    null
+  );
+  const [editDepartmentName, setEditDepartmentName] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [departmentToDelete, setDepartmentToDelete] =
     useState<Department | null>(null);
@@ -92,6 +96,7 @@ export default function DepartmentsTab() {
   const dialogAnimationClass = useDialogAnimation({ duration: 0.4 });
   const [isDeletingDepartment, setIsDeletingDepartment] = useState(false);
   const [isAddingDepartment, setIsAddingDepartment] = useState(false);
+  const [isUpdatingDepartment, setIsUpdatingDepartment] = useState(false);
   const [isAlertDialogOpen, setIsAlertDialogOpen] = useState(false);
   const [departmentWithEmployees, setDepartmentWithEmployees] = useState<Department | null>(null);
   const [isEmployeesModalOpen, setIsEmployeesModalOpen] = useState(false);
@@ -261,6 +266,52 @@ export default function DepartmentsTab() {
         });
         setErrors(backendErrors);
       }
+    }
+  };
+
+  const openEditDepartment = (dept: Department) => {
+    setDepartmentToEdit(dept);
+    setEditDepartmentName(dept.department_name ?? "");
+    setErrors({});
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateDepartment = async () => {
+    if (!departmentToEdit) return;
+    const trimmed = editDepartmentName.trim();
+    if (!trimmed) {
+      setErrors({ department_name: "Department name required" });
+      return;
+    }
+
+    try {
+      await apiService.updateDepartment(departmentToEdit.id, trimmed);
+      clearDepartmentUsersCache();
+      await loadData(debouncedSearchTerm, currentPage, itemsPerPage);
+      toastMessages.generic.success(
+        "Department Updated",
+        `"${trimmed}" has been updated.`
+      );
+      setErrors({});
+      setIsEditModalOpen(false);
+      setDepartmentToEdit(null);
+      setEditDepartmentName("");
+    } catch (error: any) {
+      if (error.response?.data?.errors) {
+        const backendErrors: Record<string, string> = {};
+        Object.keys(error.response.data.errors).forEach((field) => {
+          backendErrors[field] = error.response.data.errors[field][0];
+        });
+        setErrors(backendErrors);
+        return;
+      }
+
+      const backendMsg =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to update department.";
+      toastMessages.generic.error("Error", String(backendMsg));
     }
   };
 
@@ -608,25 +659,41 @@ export default function DepartmentsTab() {
                                 <span className="min-w-0 flex-1 truncate pr-1">
                                   {dept.department_name}
                                 </span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    if (headcounts.total > 0) {
-                                      setDepartmentWithEmployees(dept);
-                                      setIsAlertDialogOpen(true);
-                                    } else {
-                                      setDepartmentToDelete(dept);
-                                      setIsDeleteModalOpen(true);
+                                <div className="flex shrink-0 items-center gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => openEditDepartment(dept)}
+                                    disabled={
+                                      deletingDepartmentId !== null ||
+                                      isUpdatingDepartment
                                     }
-                                  }}
-                                  disabled={deletingDepartmentId !== null}
-                                  aria-label={`Delete ${dept.department_name}`}
-                                  className="h-9 w-9 shrink-0 touch-manipulation p-0 text-red-600 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                    aria-label={`Edit ${dept.department_name}`}
+                                    className="h-9 w-9 touch-manipulation p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      if (headcounts.total > 0) {
+                                        setDepartmentWithEmployees(dept);
+                                        setIsAlertDialogOpen(true);
+                                      } else {
+                                        setDepartmentToDelete(dept);
+                                        setIsDeleteModalOpen(true);
+                                      }
+                                    }}
+                                    disabled={deletingDepartmentId !== null}
+                                    aria-label={`Delete ${dept.department_name}`}
+                                    className="h-9 w-9 touch-manipulation p-0 text-red-600 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </CardTitle>
                               <CardDescription className="text-xs sm:text-sm">
                                 View employees or evaluators below
@@ -827,6 +894,97 @@ export default function DepartmentsTab() {
                   </>
                 ) : (
                   "Add Department"
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Department Modal */}
+      <Dialog
+        open={isEditModalOpen}
+        onOpenChangeAction={(open) => {
+          setIsEditModalOpen(open);
+          if (!open) {
+            setDepartmentToEdit(null);
+            setEditDepartmentName("");
+            setErrors({});
+          }
+        }}
+      >
+        <DialogContent className={`max-w-md p-6 ${dialogAnimationClass}`}>
+          <DialogHeader className="pb-4">
+            <DialogTitle>Edit Department</DialogTitle>
+            <DialogDescription>
+              Update department name for{" "}
+              {departmentToEdit?.department_name ?? "this department"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 px-2 mt-2">
+            <div className="space-y-2">
+              <Label htmlFor="editDepartmentName" className="text-sm font-medium">
+                Department Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="editDepartmentName"
+                placeholder="Enter department name"
+                value={editDepartmentName}
+                onChange={(e) => {
+                  setEditDepartmentName(e.target.value);
+                  if (errors.department_name) {
+                    setErrors((prev) => ({ ...prev, department_name: "" }));
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    void handleUpdateDepartment();
+                  }
+                }}
+                autoFocus
+              />
+              {errors.department_name && (
+                <p className="text-red-500 text-sm">{errors.department_name}</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="pt-6 px-2">
+            <div className="flex justify-end space-x-4 w-full">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setErrors({});
+                  setIsEditModalOpen(false);
+                }}
+                disabled={isUpdatingDepartment}
+                className="cursor-pointer text-white bg-blue-600 hover:text-white hover:bg-blue-700 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={isUpdatingDepartment || !departmentToEdit}
+                className={`bg-green-600 hover:bg-green-700 text-white flex items-center gap-2
+    cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0
+    ${isUpdatingDepartment ? "opacity-70 cursor-not-allowed hover:scale-100" : ""}
+  `}
+                onClick={async () => {
+                  setIsUpdatingDepartment(true);
+                  try {
+                    await handleUpdateDepartment();
+                  } finally {
+                    setIsUpdatingDepartment(false);
+                  }
+                }}
+              >
+                {isUpdatingDepartment ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
                 )}
               </Button>
             </div>
