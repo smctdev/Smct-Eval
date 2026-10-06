@@ -272,16 +272,12 @@ export default function OverviewTab() {
     setIsViewResultsModalOpen(true);
   };
 
-  const handleClose = async () => {
-    try {
-      setIsRefreshing(true);
-      setIsViewResultsModalOpen(false);
-      setViewSubmissionId(null);
-    } catch (error) {
-      console.log(error);
-      setIsViewResultsModalOpen(false);
-      setViewSubmissionId(null);
-    }
+  const handleClose = () => {
+    setIsViewResultsModalOpen(false);
+    setViewSubmissionId(null);
+    // Refresh the overview list after closing; the fetch effect clears isRefreshing.
+    setIsRefreshing(true);
+    setRefreshNonce((prev) => prev + 1);
   };
 
   const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
