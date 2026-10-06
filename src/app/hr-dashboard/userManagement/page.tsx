@@ -49,11 +49,8 @@ import {
   X,
   Download,
   RefreshCw,
-  ChevronDown,
-  MoreHorizontal,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { AnimatePresence, motion } from "framer-motion";
 import EditUserModal from "@/components/EditUserModal";
 import AddEmployeeModal from "@/components/AddEmployeeModal";
 import { toastMessages } from "@/lib/toastMessages";
@@ -401,9 +398,6 @@ export default function UserManagementTab() {
   const [userToEdit, setUserToEdit] = useState<any>(null);
   const [employeeToDelete, setEmployeeToDelete] = useState<User | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
-  const [expandedActionRowId, setExpandedActionRowId] = useState<number | null>(
-    null
-  );
   const [isEvaluationDeleteAlertOpen, setIsEvaluationDeleteAlertOpen] =
     useState(false);
   const [evaluationDeleteAlertMessage, setEvaluationDeleteAlertMessage] =
@@ -1910,259 +1904,82 @@ export default function UserManagementTab() {
                                     {getDisplayRoleName(employee) || "N/A"}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="min-w-[9rem]">
-                                  {(() => {
-                                    const rowId = Number(employee.id);
-                                    const isActionsExpanded =
-                                      expandedActionRowId === rowId;
-                                    const actionIconBtn =
-                                      "h-8 w-8 shrink-0 rounded-lg p-0 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50";
-                                    const actionMotion = {
-                                      initial: { opacity: 0, scale: 0.92, x: 8 },
-                                      animate: { opacity: 1, scale: 1, x: 0 },
-                                      exit: { opacity: 0, scale: 0.94, x: -6 },
-                                      transition: {
-                                        duration: 0.22,
-                                        ease: [0.22, 1, 0.36, 1] as const,
-                                      },
-                                    };
-                                    const collapsedMotion = {
-                                      initial: { opacity: 0, scale: 0.94, x: -6 },
-                                      animate: { opacity: 1, scale: 1, x: 0 },
-                                      exit: { opacity: 0, scale: 0.94, x: 6 },
-                                      transition: {
-                                        duration: 0.18,
-                                        ease: [0.22, 1, 0.36, 1] as const,
-                                      },
-                                    };
-
-                                    return (
-                                      <div className="relative flex min-h-9 items-center">
-                                        <AnimatePresence mode="wait" initial={false}>
-                                          {!isActionsExpanded ? (
-                                            <motion.div
-                                              key={`actions-collapsed-${rowId}`}
-                                              {...collapsedMotion}
-                                              className="inline-flex"
-                                            >
-                                              <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-9 gap-2 rounded-full border-slate-200 bg-blue-500 to-slate-50 px-3.5 text-xs font-semibold tracking-wide text-white hover:bg-blue-400 shadow-sm hover:border-blue-300 hover:from-blue-50 hover:to-white hover:text-white cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
-                                                onClick={() =>
-                                                  setExpandedActionRowId(rowId)
-                                                }
-                                                disabled={deletingUserId !== null}
-                                                aria-expanded={false}
-                                                aria-label={`Expand actions for ${employee.fname}`}
-                                                title="Show actions"
-                                              >
-                                                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-                                                  <MoreHorizontal className="h-3.5 w-3.5" />
-                                                </span>
-                                                Actions
-                                                <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-                                              </Button>
-                                            </motion.div>
-                                          ) : (
-                                            <motion.div
-                                              key={`actions-expanded-${rowId}`}
-                                              {...actionMotion}
-                                              className="inline-flex max-w-full items-center gap-0.5 rounded-2xl border border-slate-200 bg-white p-1 shadow-md ring-1 ring-slate-100/80"
-                                            >
-                                              <motion.div
-                                                className="inline-flex items-center gap-0.5"
-                                                initial="hidden"
-                                                animate="show"
-                                                variants={{
-                                                  hidden: {},
-                                                  show: {
-                                                    transition: {
-                                                      staggerChildren: 0.03,
-                                                      delayChildren: 0.04,
-                                                    },
-                                                  },
-                                                }}
-                                              >
-                                                {(
-                                                  [
-                                                    {
-                                                      key: "view",
-                                                      title: "View",
-                                                      label: "View employee",
-                                                      className:
-                                                        "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800",
-                                                      icon: Eye,
-                                                      disabled:
-                                                        deletingUserId !== null,
-                                                      onClick: () => {
-                                                        setEmployeeToView(
-                                                          employee
-                                                        );
-                                                        setIsViewEmployeeModalOpen(
-                                                          true
-                                                        );
-                                                      },
-                                                    },
-                                                    {
-                                                      key: "evaluate",
-                                                      title: "Evaluate",
-                                                      label: "Evaluate employee",
-                                                      className:
-                                                        "bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800",
-                                                      icon: FileText,
-                                                      disabled: false,
-                                                      onClick: () => {
-                                                        setIsEvaluationTypeModalOpen(
-                                                          true
-                                                        );
-                                                        setSelectedEmployeeForEvaluation(
-                                                          employee
-                                                        );
-                                                      },
-                                                    },
-                                                    {
-                                                      key: "memo",
-                                                      title: "Memorandum",
-                                                      label:
-                                                        "Add memorandum violation",
-                                                      className:
-                                                        "bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-900",
-                                                      icon: FileWarning,
-                                                      disabled:
-                                                        deletingUserId !== null,
-                                                      onClick: () => {
-                                                        setEmployeeForMemorandumViolation(
-                                                          employee
-                                                        );
-                                                        setMemorandumPickerBranchId(
-                                                          undefined
-                                                        );
-                                                        setIsMemorandumViolationModalOpen(
-                                                          true
-                                                        );
-                                                      },
-                                                    },
-                                                    {
-                                                      key: "average",
-                                                      title: "Average",
-                                                      label:
-                                                        "View employee average",
-                                                      className:
-                                                        "bg-sky-50 text-sky-700 hover:bg-sky-100 hover:text-sky-800",
-                                                      icon: BarChart2,
-                                                      disabled:
-                                                        deletingUserId !== null,
-                                                      onClick: () => {
-                                                        setEmployeeForAverage(
-                                                          employee
-                                                        );
-                                                        setIsAverageModalOpen(
-                                                          true
-                                                        );
-                                                      },
-                                                    },
-                                                    {
-                                                      key: "edit",
-                                                      title: "Edit",
-                                                      label: "Edit employee",
-                                                      className:
-                                                        "bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800",
-                                                      icon: Pencil,
-                                                      disabled:
-                                                        deletingUserId !== null,
-                                                      onClick: () =>
-                                                        openEditModal(employee),
-                                                    },
-                                                    {
-                                                      key: "delete",
-                                                      title: "Delete",
-                                                      label: "Delete employee",
-                                                      className:
-                                                        "bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700",
-                                                      icon: Trash2,
-                                                      disabled:
-                                                        deletingUserId !== null,
-                                                      onClick: () =>
-                                                        openDeleteModal(
-                                                          employee
-                                                        ),
-                                                    },
-                                                  ] as const
-                                                ).map((action) => {
-                                                  const Icon = action.icon;
-                                                  return (
-                                                    <motion.div
-                                                      key={action.key}
-                                                      variants={{
-                                                        hidden: {
-                                                          opacity: 0,
-                                                          y: 4,
-                                                          scale: 0.9,
-                                                        },
-                                                        show: {
-                                                          opacity: 1,
-                                                          y: 0,
-                                                          scale: 1,
-                                                        },
-                                                      }}
-                                                      transition={{
-                                                        duration: 0.16,
-                                                        ease: [
-                                                          0.22, 1, 0.36, 1,
-                                                        ],
-                                                      }}
-                                                    >
-                                                      <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className={cn(
-                                                          actionIconBtn,
-                                                          action.className
-                                                        )}
-                                                        onClick={action.onClick}
-                                                        disabled={
-                                                          action.disabled
-                                                        }
-                                                        title={action.title}
-                                                        aria-label={
-                                                          action.label
-                                                        }
-                                                      >
-                                                        <Icon className="h-4 w-4" />
-                                                      </Button>
-                                                    </motion.div>
-                                                  );
-                                                })}
-                                              </motion.div>
-                                              <div
-                                                className="mx-0.5 h-6 w-px shrink-0 bg-slate-200"
-                                                aria-hidden
-                                              />
-                                              <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                className={cn(
-                                                  actionIconBtn,
-                                                  "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
-                                                )}
-                                                onClick={() =>
-                                                  setExpandedActionRowId(null)
-                                                }
-                                                aria-expanded={true}
-                                                aria-label="Close actions"
-                                                title="Close"
-                                              >
-                                                <X className="h-4 w-4" />
-                                              </Button>
-                                            </motion.div>
-                                          )}
-                                        </AnimatePresence>
-                                      </div>
-                                    );
-                                  })()}
+                                <TableCell>
+                                  <div className="flex space-x-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-green-600 hover:text-green-700 hover:bg-green-200 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0"
+                                      onClick={() => {
+                                        setEmployeeToView(employee);
+                                        setIsViewEmployeeModalOpen(true);
+                                      }}
+                                      disabled={deletingUserId !== null}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-green-600 hover:text-green-700 hover:bg-green-200 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0"
+                                      onClick={() => {
+                                        setIsEvaluationTypeModalOpen(true);
+                                        setSelectedEmployeeForEvaluation(
+                                          employee
+                                        );
+                                      }}
+                                      title="Evaluate employee performance"
+                                    >
+                                      <FileText className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-amber-600 hover:text-amber-800 hover:bg-amber-100 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0"
+                                      onClick={() => {
+                                        setEmployeeForMemorandumViolation(
+                                          employee
+                                        );
+                                        setMemorandumPickerBranchId(undefined);
+                                        setIsMemorandumViolationModalOpen(true);
+                                      }}
+                                      disabled={deletingUserId !== null}
+                                      title="Add memorandum violation"
+                                    >
+                                      <FileWarning className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-200 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0"
+                                      onClick={() => {
+                                        setEmployeeForAverage(employee);
+                                        setIsAverageModalOpen(true);
+                                      }}
+                                      disabled={deletingUserId !== null}
+                                      title="View employee average"
+                                    >
+                                      <BarChart2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-200 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0"
+                                      onClick={() => openEditModal(employee)}
+                                      disabled={deletingUserId !== null}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-200 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0"
+                                      onClick={() => openDeleteModal(employee)}
+                                      disabled={deletingUserId !== null}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 </TableCell>
                               </>
                             )}

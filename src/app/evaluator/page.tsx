@@ -109,12 +109,12 @@ const EVALUATOR_TABLE_CLASS =
   "min-w-[34rem] sm:min-w-[42rem] md:min-w-[52rem] lg:min-w-0 lg:w-full [&_th]:h-auto [&_th]:min-h-8 [&_th]:whitespace-nowrap [&_th]:px-2 [&_th]:py-2 [&_th]:align-middle [&_th]:text-[0.6rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-slate-600 sm:[&_th]:px-2.5 sm:[&_th]:py-2.5 sm:[&_th]:text-[0.65rem] lg:[&_th]:px-3 lg:[&_th]:text-xs [&_td]:min-w-0 [&_td]:px-2 [&_td]:py-2.5 [&_td]:align-middle [&_td]:text-[0.7rem] [&_td]:leading-snug sm:[&_td]:px-2.5 sm:[&_td]:py-2.5 sm:[&_td]:text-xs lg:[&_td]:px-3 lg:[&_td]:text-sm";
 
 const EVALUATOR_ACTIONS_HEAD_CLASS =
-  "w-[3.25rem] min-w-[3.25rem] p-1 text-center lg:sticky lg:right-0 lg:z-[4] lg:min-w-[6.5rem] lg:bg-white lg:text-left lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]";
+  "min-w-[7.5rem] p-1 text-center align-middle sm:min-w-[8.5rem] sm:p-2 lg:sticky lg:right-0 lg:z-[4] lg:min-w-[12rem] lg:bg-white lg:text-left lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]";
 
 function evaluatorActionsCellClass(rowClassName: string) {
   return cn(
-    "w-[3.25rem] min-w-[3.25rem] max-w-[3.25rem] p-1 sm:max-w-none sm:p-2",
-    "lg:sticky lg:right-0 lg:z-[3] lg:min-w-[6.5rem] lg:w-auto lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]",
+    "w-auto min-w-[7.5rem] p-1 align-middle sm:min-w-[8.5rem] sm:p-2",
+    "lg:sticky lg:right-0 lg:z-[3] lg:min-w-[12rem] lg:w-auto lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]",
     rowClassName.includes("bg-green-50") && "lg:bg-green-50",
     rowClassName.includes("bg-yellow-50") && "lg:bg-yellow-50",
     rowClassName.includes("bg-blue-50") && "lg:bg-blue-50",

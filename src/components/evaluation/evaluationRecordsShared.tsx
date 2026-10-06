@@ -84,13 +84,13 @@ export const EVAL_RECORDS_TABLE_CLASS =
   "min-w-[38rem] sm:min-w-[48rem] md:min-w-[56rem] lg:min-w-[68rem] xl:min-w-0 xl:w-full [&_th]:h-auto [&_th]:min-h-8 [&_th]:whitespace-nowrap [&_th]:px-2 [&_th]:py-2 [&_th]:align-middle [&_th]:text-[0.6rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-slate-600 sm:[&_th]:min-h-9 sm:[&_th]:px-2.5 sm:[&_th]:py-2.5 sm:[&_th]:text-[0.65rem] lg:[&_th]:px-3 lg:[&_th]:text-xs xl:[&_th]:px-4 [&_td]:min-w-0 [&_td]:px-2 [&_td]:py-2 [&_td]:align-top [&_td]:text-[0.7rem] [&_td]:leading-snug sm:[&_td]:px-2.5 sm:[&_td]:py-2.5 sm:[&_td]:text-xs lg:[&_td]:px-3 lg:[&_td]:text-sm lg:[&_td]:leading-snug";
 
 export const EVAL_TABLE_ACTIONS_HEAD_CLASS = cn(
-  "w-[3.25rem] min-w-[3.25rem] p-1 text-center sm:min-w-[4.5rem] sm:p-2 lg:sticky lg:right-0 lg:z-[4] lg:min-w-[7rem] lg:bg-white lg:text-left lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]"
+  "min-w-[7.5rem] p-1 text-center align-middle sm:min-w-[8.5rem] sm:p-2 lg:sticky lg:right-0 lg:z-[4] lg:min-w-[12rem] lg:bg-white lg:text-left lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]"
 );
 
 export function evalTableActionsCellClass(rowClassName: string) {
   return cn(
-    "w-[3.25rem] min-w-[3.25rem] max-w-[3.25rem] p-1 sm:w-auto sm:min-w-[4.5rem] sm:max-w-none sm:p-2",
-    "lg:sticky lg:right-0 lg:z-[3] lg:min-w-[7rem] lg:w-auto lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]",
+    "w-auto min-w-[7.5rem] p-1 align-middle sm:min-w-[8.5rem] sm:p-2",
+    "lg:sticky lg:right-0 lg:z-[3] lg:min-w-[12rem] lg:w-auto lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]",
     rowClassName.includes("bg-green-50") && "lg:bg-green-50",
     rowClassName.includes("bg-red-200") && "lg:bg-red-200",
     rowClassName.includes("bg-yellow-50") && "lg:bg-yellow-50",
@@ -1078,7 +1078,7 @@ export function EvalRecordRowActions({
 
   if (showApproverReviewActions) {
     return (
-      <div className="flex flex-col items-center justify-center gap-1 sm:flex-row sm:justify-end lg:flex-wrap lg:justify-start lg:gap-1.5">
+      <div className="flex flex-row flex-nowrap items-center justify-end gap-1 lg:justify-start lg:gap-1.5">
         <Button
           type="button"
           variant="outline"
@@ -1138,7 +1138,7 @@ export function EvalRecordRowActions({
 
   if (showDraftOwnerActions) {
     return (
-      <div className="flex flex-col items-center justify-center gap-1 sm:flex-row sm:justify-end lg:flex-wrap lg:justify-start lg:gap-1.5">
+      <div className="flex flex-row flex-nowrap items-center justify-end gap-1 lg:justify-start lg:gap-1.5">
         <Button
           type="button"
           variant="outline"
@@ -1189,7 +1189,7 @@ export function EvalRecordRowActions({
 
   if (showDraftReviewActions) {
     return (
-      <div className="flex flex-col items-center justify-center gap-1 sm:flex-row sm:justify-end lg:flex-wrap lg:justify-start lg:gap-1.5">
+      <div className="flex flex-row flex-nowrap items-center justify-end gap-1 lg:justify-start lg:gap-1.5">
         <Button
           type="button"
           variant="outline"
@@ -1248,7 +1248,7 @@ export function EvalRecordRowActions({
   }
 
   return (
-    <div className="flex flex-col items-center justify-center gap-1 sm:flex-row sm:justify-end lg:flex-wrap lg:justify-start lg:gap-1.5">
+    <div className="flex flex-row flex-nowrap items-center justify-end gap-1 lg:justify-start lg:gap-1.5">
       <Button
         type="button"
         variant="outline"
