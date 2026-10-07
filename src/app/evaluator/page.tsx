@@ -25,7 +25,6 @@ import { getQuarterColor } from "@/lib/quarterUtils";
 import apiService from "@/lib/apiService";
 import {
   formatRatingDisplay,
-  getPerformanceRatingBand,
   normalizeRatingOnFiveScale,
 } from "@/lib/performanceRatingDisplay";
 import { Progress } from "@/components/ui/progress";
@@ -34,7 +33,6 @@ import ViewResultsModal from "@/components/evaluation/ViewResultsModal";
 import {
   EvaluationApiErrorDialog,
   EvalRecordStatusBadge,
-  EvalRecordStatusTableHead,
   getReviewQuarterDisplay,
   getReviewRowClassName,
 } from "@/components/evaluation/evaluationRecordsShared";
@@ -106,25 +104,17 @@ function DashboardStatCard({
   );
 }
 
-const EVALUATOR_TABLE_CLASS =
-  "min-w-[40rem] w-full table-fixed sm:min-w-[48rem] md:min-w-[56rem] lg:min-w-0 [&_th]:h-auto [&_th]:min-h-8 [&_th]:whitespace-nowrap [&_th]:px-2 [&_th]:py-2 [&_th]:align-middle [&_th]:text-[0.6rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-slate-600 sm:[&_th]:px-2.5 sm:[&_th]:py-2.5 sm:[&_th]:text-[0.65rem] lg:[&_th]:px-3 lg:[&_th]:text-xs [&_td]:min-w-0 [&_td]:px-2 [&_td]:py-2.5 [&_td]:align-middle [&_td]:text-[0.7rem] [&_td]:leading-snug sm:[&_td]:px-2.5 sm:[&_td]:py-2.5 sm:[&_td]:text-xs lg:[&_td]:px-3 lg:[&_td]:text-sm";
+const EVALUATOR_OVERVIEW_TABLE_CLASS =
+  "min-w-[34rem] sm:min-w-[42rem] md:min-w-[52rem] lg:min-w-0 lg:w-full [&_th]:h-auto [&_th]:min-h-8 [&_th]:whitespace-nowrap [&_th]:px-2 [&_th]:py-2 [&_th]:align-middle [&_th]:text-[0.6rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-slate-600 sm:[&_th]:px-2.5 sm:[&_th]:py-2.5 sm:[&_th]:text-[0.65rem] lg:[&_th]:px-3 lg:[&_th]:text-xs [&_td]:min-w-0 [&_td]:px-2 [&_td]:py-2 [&_td]:align-top [&_td]:text-[0.7rem] [&_td]:leading-snug sm:[&_td]:px-2.5 sm:[&_td]:py-2.5 sm:[&_td]:text-xs lg:[&_td]:px-3 lg:[&_td]:text-sm";
 
-/** Percent widths keep columns evenly spaced under `table-fixed`. */
-const OVERVIEW_COL = {
-  employee: "w-[22%] text-left md:w-[18%]",
-  rating: "hidden w-[24%] text-center sm:table-cell md:w-[22%]",
-  status: "hidden w-[18%] text-center sm:table-cell md:w-[16%]",
-  date: "hidden w-[18%] text-center sm:table-cell md:w-[16%]",
-  quarter: "hidden w-[14%] text-center md:table-cell",
-} as const;
+const EVALUATOR_OVERVIEW_ACTIONS_HEAD = cn(
+  "w-[3.25rem] min-w-[3.25rem] p-1 text-center lg:sticky lg:right-0 lg:z-[4] lg:min-w-[6.5rem] lg:bg-white lg:text-left lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]"
+);
 
-const EVALUATOR_ACTIONS_HEAD_CLASS =
-  "w-[18%] p-1 text-center align-middle md:w-[14%] lg:sticky lg:right-0 lg:z-[4] lg:bg-white lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]";
-
-function evaluatorActionsCellClass(rowClassName: string) {
+function evaluatorOverviewActionsCellClass(rowClassName: string) {
   return cn(
-    "w-[18%] p-1 align-middle md:w-[14%]",
-    "lg:sticky lg:right-0 lg:z-[3] lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]",
+    "w-[3.25rem] min-w-[3.25rem] max-w-[3.25rem] p-1 sm:max-w-none sm:p-2",
+    "lg:sticky lg:right-0 lg:z-[3] lg:min-w-[6.5rem] lg:w-auto lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]",
     rowClassName.includes("bg-green-50") && "lg:bg-green-50",
     rowClassName.includes("bg-yellow-50") && "lg:bg-yellow-50",
     rowClassName.includes("bg-blue-50") && "lg:bg-blue-50",
@@ -139,20 +129,21 @@ function evaluatorActionsCellClass(rowClassName: string) {
   );
 }
 
-function formatListDate(createdAt: string): { short: string; full: string } {
-  const d = new Date(createdAt);
-  return {
-    short: d.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "2-digit",
-    }),
-    full: d.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    }),
-  };
+function getRatingColor(rating: number | string) {
+  const score = Number(rating);
+  if (!Number.isFinite(score)) return "bg-gray-100 text-gray-800";
+  if (score >= 4.5) return "bg-green-100 text-green-800";
+  if (score >= 4.0) return "bg-blue-100 text-blue-800";
+  if (score >= 3.5) return "bg-yellow-100 text-yellow-800";
+  return "bg-red-100 text-red-800";
+}
+
+function formatListDate(createdAt: string): string {
+  return new Date(createdAt).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function EvaluationStatusLegendBadges() {
@@ -286,26 +277,6 @@ export default function OverviewTab() {
     setIsViewResultsModalOpen(false);
     setViewSubmissionId(null);
   };
-
-  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-
-  const getTimeAgo = (submittedAt: string) => {
-    const diffSeconds = Math.floor(
-      (Date.now() - new Date(submittedAt).getTime()) / 1000
-    );
-
-    if (diffSeconds < 60) return rtf.format(-diffSeconds, "second");
-    if (diffSeconds < 3600)
-      return rtf.format(-Math.floor(diffSeconds / 60), "minute");
-    if (diffSeconds < 86400)
-      return rtf.format(-Math.floor(diffSeconds / 3600), "hour");
-    if (diffSeconds < 604800)
-      return rtf.format(-Math.floor(diffSeconds / 86400), "day");
-
-    return;
-  };
-
-  // Filter submissions for overview table
 
   return (
     <div className="grid grid-cols-1 gap-6">
@@ -535,17 +506,28 @@ export default function OverviewTab() {
                 </div>
               </div>
               {/* Table structure visible in background */}
-              <Table className={EVALUATOR_TABLE_CLASS} wrapperClassName="overflow-visible">
+              <Table
+                className={EVALUATOR_OVERVIEW_TABLE_CLASS}
+                wrapperClassName="overflow-visible"
+              >
                 <TableHeader className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
                   <TableRow className="border-0 hover:bg-transparent" key="overview-header">
-                    <TableHead className={OVERVIEW_COL.employee}>Employee</TableHead>
-                    <TableHead className={OVERVIEW_COL.rating}>Rating</TableHead>
-                    <TableHead className={OVERVIEW_COL.status}>
-                      <EvalRecordStatusTableHead />
+                    <TableHead className="min-w-[7.5rem] sm:min-w-[9rem]">
+                      Employee
                     </TableHead>
-                    <TableHead className={OVERVIEW_COL.date}>Date</TableHead>
-                    <TableHead className={OVERVIEW_COL.quarter}>Quarter</TableHead>
-                    <TableHead className={EVALUATOR_ACTIONS_HEAD_CLASS}>
+                    <TableHead className="hidden min-w-[4rem] sm:table-cell">
+                      Rating
+                    </TableHead>
+                    <TableHead className="hidden min-w-[3.5rem] md:table-cell">
+                      Quarter
+                    </TableHead>
+                    <TableHead className="hidden min-w-[5rem] sm:table-cell">
+                      Date
+                    </TableHead>
+                    <TableHead className="hidden min-w-[5.5rem] lg:table-cell">
+                      Status
+                    </TableHead>
+                    <TableHead className={EVALUATOR_OVERVIEW_ACTIONS_HEAD}>
                       <span className="lg:hidden" aria-hidden>
                         ⋮
                       </span>
@@ -553,32 +535,29 @@ export default function OverviewTab() {
                     </TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className="divide-y divide-gray-200">
                   {Array.from({ length: itemsPerPage }).map((_, index) => (
                     <TableRow key={`skeleton-${index}`}>
-                      <TableCell className={OVERVIEW_COL.employee}>
-                        <div className="flex items-center space-x-3">
-                          <Skeleton className="h-8 w-8 rounded-full" />
-                          <div className="space-y-2">
-                            <Skeleton className="h-4 w-24" />
-                            <Skeleton className="h-3 w-16" />
-                          </div>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <Skeleton className="h-3 w-20" />
+                          <Skeleton className="h-2.5 w-24" />
                         </div>
                       </TableCell>
-                      <TableCell className={OVERVIEW_COL.rating}>
-                        <Skeleton className="mx-auto h-6 w-20 rounded-full" />
+                      <TableCell className="hidden sm:table-cell">
+                        <Skeleton className="h-5 w-14 rounded-full" />
                       </TableCell>
-                      <TableCell className={OVERVIEW_COL.status}>
-                        <Skeleton className="mx-auto h-6 w-16 rounded-full" />
+                      <TableCell className="hidden md:table-cell">
+                        <Skeleton className="h-5 w-12 rounded-full" />
                       </TableCell>
-                      <TableCell className={OVERVIEW_COL.date}>
-                        <Skeleton className="mx-auto h-4 w-20" />
+                      <TableCell className="hidden sm:table-cell">
+                        <Skeleton className="h-3 w-16" />
                       </TableCell>
-                      <TableCell className={OVERVIEW_COL.quarter}>
-                        <Skeleton className="mx-auto h-6 w-14 rounded-full" />
+                      <TableCell className="hidden lg:table-cell">
+                        <Skeleton className="h-5 w-20 rounded-full" />
                       </TableCell>
-                      <TableCell className={evaluatorActionsCellClass("")}>
-                        <Skeleton className="mx-auto h-8 w-8 rounded-md bg-gray-200" />
+                      <TableCell className={evaluatorOverviewActionsCellClass("")}>
+                        <Skeleton className="mx-auto h-8 w-8 rounded-md bg-gray-200 lg:mx-0 lg:h-6 lg:w-16" />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -614,17 +593,28 @@ export default function OverviewTab() {
                 Swipe horizontally to view all columns.
               </p>
               <div className="max-h-[min(70vh,32rem)] overflow-y-auto overflow-x-auto scrollable-table overview-table [-webkit-overflow-scrolling:touch]">
-                <Table className={EVALUATOR_TABLE_CLASS} wrapperClassName="overflow-visible">
+                <Table
+                  className={EVALUATOR_OVERVIEW_TABLE_CLASS}
+                  wrapperClassName="overflow-visible"
+                >
                   <TableHeader className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
                     <TableRow className="border-0 hover:bg-transparent" key="overview-header">
-                      <TableHead className={OVERVIEW_COL.employee}>Employee</TableHead>
-                      <TableHead className={OVERVIEW_COL.rating}>Rating</TableHead>
-                      <TableHead className={OVERVIEW_COL.status}>
-                        <EvalRecordStatusTableHead />
+                      <TableHead className="min-w-[7.5rem] sm:min-w-[9rem]">
+                        Employee
                       </TableHead>
-                      <TableHead className={OVERVIEW_COL.date}>Date</TableHead>
-                      <TableHead className={OVERVIEW_COL.quarter}>Quarter</TableHead>
-                      <TableHead className={EVALUATOR_ACTIONS_HEAD_CLASS}>
+                      <TableHead className="hidden min-w-[4rem] sm:table-cell">
+                        Rating
+                      </TableHead>
+                      <TableHead className="hidden min-w-[3.5rem] md:table-cell">
+                        Quarter
+                      </TableHead>
+                      <TableHead className="hidden min-w-[5rem] sm:table-cell">
+                        Date
+                      </TableHead>
+                      <TableHead className="hidden min-w-[5.5rem] lg:table-cell">
+                        Status
+                      </TableHead>
+                      <TableHead className={EVALUATOR_OVERVIEW_ACTIONS_HEAD}>
                         <span className="lg:hidden" aria-hidden>
                           ⋮
                         </span>
@@ -632,12 +622,12 @@ export default function OverviewTab() {
                       </TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBody className="divide-y divide-gray-200">
                     {(!data || data.length === 0) ? (
                       <TableRow key="no-submissions">
                         <TableCell
                           colSpan={6}
-                          className="px-6 py-12 text-center"
+                          className="py-10 text-center sm:py-12"
                         >
                           <div className="flex flex-col items-center justify-center gap-4">
                             <img
@@ -687,18 +677,12 @@ export default function OverviewTab() {
                         const isNew = hoursDiff <= 24;
                         const isRecent = hoursDiff > 24 && hoursDiff <= 168;
                         const rowClassName = getReviewRowClassName(review);
-                        const ratingBand = getPerformanceRatingBand(review.rating);
-                        const {
-                          label: ratingLabel,
-                          badgeClassName,
-                          textClassName,
-                        } = ratingBand;
                         const reviewDate = formatListDate(review.created_at);
                         const quarterDisplay = getReviewQuarterDisplay(review);
 
                         return (
                           <TableRow key={review.id} className={rowClassName}>
-                            <TableCell className={cn(OVERVIEW_COL.employee, "align-middle")}>
+                            <TableCell>
                               <div className="min-w-0">
                                 <div className="mb-1 flex flex-wrap items-center gap-1">
                                   <span className="max-w-[10rem] truncate text-sm font-medium text-gray-900 sm:max-w-none">
@@ -711,107 +695,88 @@ export default function OverviewTab() {
                                       .trim() || "—"}
                                   </span>
                                   {isNew && (
-                                    <Badge className="bg-yellow-100 px-1 py-0 text-[0.6rem] font-semibold text-yellow-800 sm:text-xs">
-                                      ⚡ New
+                                    <Badge className="bg-yellow-200 px-1 py-0 text-[0.6rem] font-semibold text-yellow-800 sm:text-xs">
+                                      ⚡ NEW
                                     </Badge>
                                   )}
                                   {!isNew && isRecent && (
-                                    <Badge className="bg-blue-100 px-1 py-0 text-[0.6rem] font-semibold text-blue-800 sm:text-xs">
-                                      🕐 Recent
+                                    <Badge className="bg-blue-200 px-1 py-0 text-[0.6rem] font-semibold text-blue-800 sm:text-xs">
+                                      ⏳ RECENT
                                     </Badge>
                                   )}
                                 </div>
-
-                                <div className="mt-1.5 flex flex-wrap items-center gap-1 sm:hidden">
-                                  <div
-                                    className={cn(
-                                      "flex items-center justify-center gap-1.5",
-                                      textClassName
-                                    )}
-                                  >
-                                    <span
+                                {review.employee?.email ? (
+                                  <div className="truncate text-[0.65rem] text-gray-500 sm:text-xs">
+                                    {review.employee.email}
+                                  </div>
+                                ) : null}
+                                <div className="mt-1.5 flex flex-wrap items-center gap-1 lg:hidden">
+                                  {review.rating ? (
+                                    <Badge
                                       className={cn(
-                                        "rounded-full px-2 py-0.5 text-[0.6rem] font-medium",
-                                        badgeClassName
+                                        "text-[0.6rem] font-semibold sm:text-xs",
+                                        getRatingColor(review.rating)
                                       )}
                                     >
-                                      {ratingLabel}
-                                    </span>
-                                    <span className="text-[0.65rem] font-bold">
-                                      {formatRatingDisplay(review.rating)}
-                                    </span>
-                                  </div>
-                                  <EvalRecordStatusBadge review={review} />
+                                      {review.rating != null &&
+                                      Number(review.rating) > 0
+                                        ? formatRatingDisplay(review.rating)
+                                        : "N/A"}
+                                    </Badge>
+                                  ) : null}
                                   <Badge
                                     className={cn(
-                                      "max-w-[5rem] truncate text-[0.6rem]",
+                                      "max-w-[5rem] truncate text-[0.6rem] sm:max-w-none sm:text-xs",
                                       getQuarterColor(quarterDisplay)
                                     )}
                                   >
                                     {quarterDisplay}
                                   </Badge>
-                                  <span className="text-[0.65rem] text-gray-600">
-                                    {reviewDate.short}
+                                  <span className="text-[0.65rem] text-gray-600 sm:hidden">
+                                    {reviewDate}
                                   </span>
+                                  <div className="lg:hidden">
+                                    <EvalRecordStatusBadge review={review} />
+                                  </div>
                                 </div>
                               </div>
                             </TableCell>
-
-                            <TableCell className={cn(OVERVIEW_COL.rating, "align-middle")}>
-                              <div
-                                className={cn(
-                                  "mx-auto flex max-w-full flex-col items-center justify-center gap-0.5",
-                                  textClassName
-                                )}
-                              >
-                                <span
-                                  className={cn(
-                                    "rounded-full px-2 py-0.5 text-[0.65rem] font-medium",
-                                    badgeClassName
-                                  )}
-                                >
-                                  {ratingLabel}
-                                </span>
-                                <span className="text-xs font-bold tabular-nums">
-                                  {formatRatingDisplay(review.rating)}
-                                </span>
-                              </div>
-                            </TableCell>
-
-                            <TableCell className={cn(OVERVIEW_COL.status, "align-middle")}>
-                              <div className="flex justify-center">
-                                <EvalRecordStatusBadge review={review} />
-                              </div>
-                            </TableCell>
-
-                            <TableCell className={cn(OVERVIEW_COL.date, "align-middle")}>
-                              <div className="mx-auto flex flex-col items-center justify-center gap-0.5">
-                                <span className="text-xs font-medium whitespace-nowrap text-gray-800">
-                                  {reviewDate.short}
-                                </span>
-                                <span className="text-[0.65rem] text-gray-500">
-                                  {getTimeAgo(String(review.created_at))}
-                                </span>
-                              </div>
-                            </TableCell>
-
-                            <TableCell className={cn(OVERVIEW_COL.quarter, "align-middle")}>
-                              <div className="flex justify-center">
+                            <TableCell className="hidden sm:table-cell">
+                              {review.rating ? (
                                 <Badge
                                   className={cn(
-                                    "max-w-full truncate text-[0.65rem] sm:text-xs",
-                                    getQuarterColor(quarterDisplay)
+                                    "text-xs font-semibold",
+                                    getRatingColor(review.rating)
                                   )}
                                 >
-                                  {quarterDisplay}
+                                  {review.rating != null &&
+                                  Number(review.rating) > 0
+                                    ? formatRatingDisplay(review.rating)
+                                    : "N/A"}
                                 </Badge>
-                              </div>
+                              ) : (
+                                <span className="text-xs text-gray-400">—</span>
+                              )}
                             </TableCell>
-
+                            <TableCell className="hidden md:table-cell">
+                              <Badge
+                                className={cn(
+                                  "max-w-[5.5rem] truncate text-xs",
+                                  getQuarterColor(quarterDisplay)
+                                )}
+                              >
+                                {quarterDisplay}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="hidden whitespace-nowrap text-gray-600 sm:table-cell">
+                              {reviewDate}
+                            </TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              <EvalRecordStatusBadge review={review} />
+                            </TableCell>
                             <TableCell
-                              className={cn(
-                                "align-middle",
-                                evaluatorActionsCellClass(rowClassName)
+                              className={evaluatorOverviewActionsCellClass(
+                                rowClassName
                               )}
                             >
                               <Button
@@ -820,7 +785,7 @@ export default function OverviewTab() {
                                 variant="outline"
                                 onClick={() => handleViewEvaluation(review)}
                                 aria-label="View evaluation"
-                                className="mx-auto h-8 w-8 shrink-0 cursor-pointer border-blue-700 bg-blue-600 text-white hover:bg-blue-700 hover:text-white lg:h-9 lg:w-auto lg:px-3 lg:transition-all lg:duration-200 lg:hover:-translate-y-0.5 lg:hover:shadow-md lg:active:translate-y-0"
+                                className="mx-auto h-8 w-8 shrink-0 cursor-pointer border-blue-700 bg-blue-600 text-white hover:bg-blue-700 hover:text-white lg:mx-0 lg:h-9 lg:w-auto lg:px-3 lg:transition-all lg:duration-200 lg:hover:-translate-y-0.5 lg:hover:shadow-md lg:active:translate-y-0"
                               >
                                 <Eye className="h-4 w-4 lg:hidden" />
                                 <span className="hidden lg:inline">☰ View</span>
