@@ -34,6 +34,7 @@ import ViewResultsModal from "@/components/evaluation/ViewResultsModal";
 import {
   EvaluationApiErrorDialog,
   EvalRecordStatusBadge,
+  EvalRecordStatusTableHead,
   getReviewQuarterDisplay,
   getReviewRowClassName,
 } from "@/components/evaluation/evaluationRecordsShared";
@@ -106,14 +107,23 @@ function DashboardStatCard({
 }
 
 const EVALUATOR_TABLE_CLASS =
-  "min-w-[34rem] sm:min-w-[42rem] md:min-w-[52rem] lg:min-w-0 lg:w-full [&_th]:h-auto [&_th]:min-h-8 [&_th]:whitespace-nowrap [&_th]:px-2 [&_th]:py-2 [&_th]:align-middle [&_th]:text-[0.6rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-slate-600 sm:[&_th]:px-2.5 sm:[&_th]:py-2.5 sm:[&_th]:text-[0.65rem] lg:[&_th]:px-3 lg:[&_th]:text-xs [&_td]:min-w-0 [&_td]:px-2 [&_td]:py-2.5 [&_td]:align-middle [&_td]:text-[0.7rem] [&_td]:leading-snug sm:[&_td]:px-2.5 sm:[&_td]:py-2.5 sm:[&_td]:text-xs lg:[&_td]:px-3 lg:[&_td]:text-sm";
+  "min-w-[40rem] w-full table-fixed sm:min-w-[48rem] md:min-w-[56rem] lg:min-w-0 [&_th]:h-auto [&_th]:min-h-8 [&_th]:whitespace-nowrap [&_th]:px-2 [&_th]:py-2 [&_th]:align-middle [&_th]:text-[0.6rem] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-slate-600 sm:[&_th]:px-2.5 sm:[&_th]:py-2.5 sm:[&_th]:text-[0.65rem] lg:[&_th]:px-3 lg:[&_th]:text-xs [&_td]:min-w-0 [&_td]:px-2 [&_td]:py-2.5 [&_td]:align-middle [&_td]:text-[0.7rem] [&_td]:leading-snug sm:[&_td]:px-2.5 sm:[&_td]:py-2.5 sm:[&_td]:text-xs lg:[&_td]:px-3 lg:[&_td]:text-sm";
+
+/** Percent widths keep columns evenly spaced under `table-fixed`. */
+const OVERVIEW_COL = {
+  employee: "w-[22%] text-left md:w-[18%]",
+  rating: "hidden w-[24%] text-center sm:table-cell md:w-[22%]",
+  status: "hidden w-[18%] text-center sm:table-cell md:w-[16%]",
+  date: "hidden w-[18%] text-center sm:table-cell md:w-[16%]",
+  quarter: "hidden w-[14%] text-center md:table-cell",
+} as const;
 
 const EVALUATOR_ACTIONS_HEAD_CLASS =
-  "w-0 whitespace-nowrap p-1 text-center align-middle lg:sticky lg:right-0 lg:z-[4] lg:bg-white lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]";
+  "w-[18%] p-1 text-center align-middle md:w-[14%] lg:sticky lg:right-0 lg:z-[4] lg:bg-white lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]";
 
 function evaluatorActionsCellClass(rowClassName: string) {
   return cn(
-    "w-0 whitespace-nowrap p-1 align-middle",
+    "w-[18%] p-1 align-middle md:w-[14%]",
     "lg:sticky lg:right-0 lg:z-[3] lg:shadow-[-6px_0_12px_-4px_rgba(15,23,42,0.12)]",
     rowClassName.includes("bg-green-50") && "lg:bg-green-50",
     rowClassName.includes("bg-yellow-50") && "lg:bg-yellow-50",
@@ -528,18 +538,13 @@ export default function OverviewTab() {
               <Table className={EVALUATOR_TABLE_CLASS} wrapperClassName="overflow-visible">
                 <TableHeader className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
                   <TableRow className="border-0 hover:bg-transparent" key="overview-header">
-                    <TableHead className="w-full min-w-[7.5rem] text-left sm:min-w-[9rem]">
-                      Employee
+                    <TableHead className={OVERVIEW_COL.employee}>Employee</TableHead>
+                    <TableHead className={OVERVIEW_COL.rating}>Rating</TableHead>
+                    <TableHead className={OVERVIEW_COL.status}>
+                      <EvalRecordStatusTableHead />
                     </TableHead>
-                    <TableHead className="hidden min-w-[4rem] text-center sm:table-cell">
-                      Rating
-                    </TableHead>
-                    <TableHead className="hidden min-w-[5rem] text-center sm:table-cell">
-                      Date
-                    </TableHead>
-                    <TableHead className="hidden min-w-[3.5rem] text-center md:table-cell">
-                      Quarter
-                    </TableHead>
+                    <TableHead className={OVERVIEW_COL.date}>Date</TableHead>
+                    <TableHead className={OVERVIEW_COL.quarter}>Quarter</TableHead>
                     <TableHead className={EVALUATOR_ACTIONS_HEAD_CLASS}>
                       <span className="lg:hidden" aria-hidden>
                         ⋮
@@ -551,7 +556,7 @@ export default function OverviewTab() {
                 <TableBody>
                   {Array.from({ length: itemsPerPage }).map((_, index) => (
                     <TableRow key={`skeleton-${index}`}>
-                      <TableCell>
+                      <TableCell className={OVERVIEW_COL.employee}>
                         <div className="flex items-center space-x-3">
                           <Skeleton className="h-8 w-8 rounded-full" />
                           <div className="space-y-2">
@@ -560,14 +565,17 @@ export default function OverviewTab() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Skeleton className="h-6 w-20 rounded-full" />
+                      <TableCell className={OVERVIEW_COL.rating}>
+                        <Skeleton className="mx-auto h-6 w-20 rounded-full" />
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Skeleton className="h-4 w-20" />
+                      <TableCell className={OVERVIEW_COL.status}>
+                        <Skeleton className="mx-auto h-6 w-16 rounded-full" />
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <Skeleton className="h-6 w-16 rounded-full" />
+                      <TableCell className={OVERVIEW_COL.date}>
+                        <Skeleton className="mx-auto h-4 w-20" />
+                      </TableCell>
+                      <TableCell className={OVERVIEW_COL.quarter}>
+                        <Skeleton className="mx-auto h-6 w-14 rounded-full" />
                       </TableCell>
                       <TableCell className={evaluatorActionsCellClass("")}>
                         <Skeleton className="mx-auto h-8 w-8 rounded-md bg-gray-200" />
@@ -609,18 +617,13 @@ export default function OverviewTab() {
                 <Table className={EVALUATOR_TABLE_CLASS} wrapperClassName="overflow-visible">
                   <TableHeader className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 backdrop-blur-sm">
                     <TableRow className="border-0 hover:bg-transparent" key="overview-header">
-                      <TableHead className="w-full min-w-[7.5rem] text-left sm:min-w-[9rem]">
-                        Employee
+                      <TableHead className={OVERVIEW_COL.employee}>Employee</TableHead>
+                      <TableHead className={OVERVIEW_COL.rating}>Rating</TableHead>
+                      <TableHead className={OVERVIEW_COL.status}>
+                        <EvalRecordStatusTableHead />
                       </TableHead>
-                      <TableHead className="hidden min-w-[4rem] text-center sm:table-cell">
-                        Rating
-                      </TableHead>
-                      <TableHead className="hidden min-w-[5rem] text-center sm:table-cell">
-                        Date
-                      </TableHead>
-                      <TableHead className="hidden min-w-[3.5rem] text-center md:table-cell">
-                        Quarter
-                      </TableHead>
+                      <TableHead className={OVERVIEW_COL.date}>Date</TableHead>
+                      <TableHead className={OVERVIEW_COL.quarter}>Quarter</TableHead>
                       <TableHead className={EVALUATOR_ACTIONS_HEAD_CLASS}>
                         <span className="lg:hidden" aria-hidden>
                           ⋮
@@ -633,7 +636,7 @@ export default function OverviewTab() {
                     {(!data || data.length === 0) ? (
                       <TableRow key="no-submissions">
                         <TableCell
-                          colSpan={5}
+                          colSpan={6}
                           className="px-6 py-12 text-center"
                         >
                           <div className="flex flex-col items-center justify-center gap-4">
@@ -695,7 +698,7 @@ export default function OverviewTab() {
 
                         return (
                           <TableRow key={review.id} className={rowClassName}>
-                            <TableCell className="text-left align-middle">
+                            <TableCell className={cn(OVERVIEW_COL.employee, "align-middle")}>
                               <div className="min-w-0">
                                 <div className="mb-1 flex flex-wrap items-center gap-1">
                                   <span className="max-w-[10rem] truncate text-sm font-medium text-gray-900 sm:max-w-none">
@@ -717,12 +720,9 @@ export default function OverviewTab() {
                                       🕐 Recent
                                     </Badge>
                                   )}
-                                  <span className="hidden sm:inline-flex">
-                                    <EvalRecordStatusBadge review={review} />
-                                  </span>
                                 </div>
 
-                                <div className="mt-1.5 flex flex-wrap items-center gap-1 lg:hidden">
+                                <div className="mt-1.5 flex flex-wrap items-center gap-1 sm:hidden">
                                   <div
                                     className={cn(
                                       "flex items-center justify-center gap-1.5",
@@ -731,73 +731,81 @@ export default function OverviewTab() {
                                   >
                                     <span
                                       className={cn(
-                                        "rounded-full px-2 py-0.5 text-[0.6rem] font-medium sm:text-xs",
+                                        "rounded-full px-2 py-0.5 text-[0.6rem] font-medium",
                                         badgeClassName
                                       )}
                                     >
                                       {ratingLabel}
                                     </span>
-                                    <span className="text-[0.65rem] font-bold sm:text-xs">
+                                    <span className="text-[0.65rem] font-bold">
                                       {formatRatingDisplay(review.rating)}
                                     </span>
                                   </div>
+                                  <EvalRecordStatusBadge review={review} />
                                   <Badge
                                     className={cn(
-                                      "max-w-[5rem] truncate text-[0.6rem] sm:max-w-none sm:text-xs",
+                                      "max-w-[5rem] truncate text-[0.6rem]",
                                       getQuarterColor(quarterDisplay)
                                     )}
                                   >
                                     {quarterDisplay}
                                   </Badge>
-                                  <span className="text-[0.65rem] text-gray-600 sm:hidden">
+                                  <span className="text-[0.65rem] text-gray-600">
                                     {reviewDate.short}
                                   </span>
-                                  <EvalRecordStatusBadge review={review} />
                                 </div>
                               </div>
                             </TableCell>
 
-                            <TableCell className="hidden text-center align-middle sm:table-cell">
+                            <TableCell className={cn(OVERVIEW_COL.rating, "align-middle")}>
                               <div
                                 className={cn(
-                                  "inline-flex items-center justify-center gap-2",
+                                  "mx-auto flex max-w-full flex-col items-center justify-center gap-0.5",
                                   textClassName
                                 )}
                               >
                                 <span
                                   className={cn(
-                                    "rounded-full px-2 py-1 text-xs font-medium",
+                                    "rounded-full px-2 py-0.5 text-[0.65rem] font-medium",
                                     badgeClassName
                                   )}
                                 >
                                   {ratingLabel}
                                 </span>
-                                <span className="font-bold">
+                                <span className="text-xs font-bold tabular-nums">
                                   {formatRatingDisplay(review.rating)}
                                 </span>
                               </div>
                             </TableCell>
 
-                            <TableCell className="hidden text-center align-middle sm:table-cell">
-                              <div className="flex flex-col items-center justify-center gap-0.5">
-                                <span className="font-medium whitespace-nowrap">
+                            <TableCell className={cn(OVERVIEW_COL.status, "align-middle")}>
+                              <div className="flex justify-center">
+                                <EvalRecordStatusBadge review={review} />
+                              </div>
+                            </TableCell>
+
+                            <TableCell className={cn(OVERVIEW_COL.date, "align-middle")}>
+                              <div className="mx-auto flex flex-col items-center justify-center gap-0.5">
+                                <span className="text-xs font-medium whitespace-nowrap text-gray-800">
                                   {reviewDate.short}
                                 </span>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-[0.65rem] text-gray-500">
                                   {getTimeAgo(String(review.created_at))}
                                 </span>
                               </div>
                             </TableCell>
 
-                            <TableCell className="hidden text-center align-middle md:table-cell">
-                              <Badge
-                                className={cn(
-                                  "mx-auto max-w-[5.5rem] truncate text-[0.65rem] sm:max-w-none sm:text-xs",
-                                  getQuarterColor(quarterDisplay)
-                                )}
-                              >
-                                {quarterDisplay}
-                              </Badge>
+                            <TableCell className={cn(OVERVIEW_COL.quarter, "align-middle")}>
+                              <div className="flex justify-center">
+                                <Badge
+                                  className={cn(
+                                    "max-w-full truncate text-[0.65rem] sm:text-xs",
+                                    getQuarterColor(quarterDisplay)
+                                  )}
+                                >
+                                  {quarterDisplay}
+                                </Badge>
+                              </div>
                             </TableCell>
 
                             <TableCell
@@ -812,7 +820,7 @@ export default function OverviewTab() {
                                 variant="outline"
                                 onClick={() => handleViewEvaluation(review)}
                                 aria-label="View evaluation"
-                                className="h-8 w-8 shrink-0 cursor-pointer border-blue-700 bg-blue-600 text-white hover:bg-blue-700 hover:text-white lg:h-9 lg:w-auto lg:px-3 lg:transition-all lg:duration-200 lg:hover:-translate-y-0.5 lg:hover:shadow-md lg:active:translate-y-0"
+                                className="mx-auto h-8 w-8 shrink-0 cursor-pointer border-blue-700 bg-blue-600 text-white hover:bg-blue-700 hover:text-white lg:h-9 lg:w-auto lg:px-3 lg:transition-all lg:duration-200 lg:hover:-translate-y-0.5 lg:hover:shadow-md lg:active:translate-y-0"
                               >
                                 <Eye className="h-4 w-4 lg:hidden" />
                                 <span className="hidden lg:inline">☰ View</span>
