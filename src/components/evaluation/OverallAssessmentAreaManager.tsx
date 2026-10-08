@@ -574,10 +574,10 @@ export default function OverallAssessmentAreaManager({
   };
 
   const getRatingLabel = (score: number) => {
-    if (score >= 4.5) return "Outstanding";
-    if (score >= 4.0) return "Exceeds Expectations";
-    if (score >= 3.5) return "Meets Expectations";
-    if (score >= 2.5) return "Needs Improvement";
+    if (score >= 5) return "Outstanding";
+    if (score >= 4) return "Exceeds Expectations";
+    if (score >= 3) return "Meets Expectations";
+    if (score >= 2) return "Needs Improvement";
     return "Unsatisfactory";
   };
 
