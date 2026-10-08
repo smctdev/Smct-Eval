@@ -1141,6 +1141,14 @@ export default function EvaluationForm({
         isSaving={isSavingDraft}
         onOpenChangeAction={setShowCancelDialog}
         onKeepEditingAction={() => setShowCancelDialog(false)}
+        onCancelEvaluationAction={() => {
+          setShowCancelDialog(false);
+          if (onCancelAction) {
+            onCancelAction();
+          } else if (onCloseAction) {
+            onCloseAction();
+          }
+        }}
         onConfirmDraftAction={async () => {
           const ok = await saveDraft();
           if (!ok) return;

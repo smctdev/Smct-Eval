@@ -15,6 +15,7 @@ type EvaluationCancelDraftDialogProps = {
   isSaving?: boolean;
   onOpenChangeAction: (open: boolean) => void;
   onKeepEditingAction: () => void;
+  onCancelEvaluationAction: () => void;
   onConfirmDraftAction: () => void;
 };
 
@@ -24,6 +25,7 @@ export default function EvaluationCancelDraftDialog({
   isSaving = false,
   onOpenChangeAction,
   onKeepEditingAction,
+  onCancelEvaluationAction,
   onConfirmDraftAction,
 }: EvaluationCancelDraftDialogProps) {
   return (
@@ -42,11 +44,11 @@ export default function EvaluationCancelDraftDialog({
         </DialogHeader>
         <div className="mx-2 my-2 bg-amber-50 p-4 py-3">
           <p className="text-gray-600">
-            Exit this evaluation and keep your progress as a draft? You can
-            continue it later from your evaluation records.
+            Save your progress as a draft so you can continue later, or cancel
+            this evaluation and leave without saving.
           </p>
         </div>
-        <DialogFooter className="flex gap-3">
+        <DialogFooter className="flex flex-wrap gap-3">
           <Button
             variant="outline"
             disabled={isSaving}
@@ -58,6 +60,18 @@ export default function EvaluationCancelDraftDialog({
             className="cursor-pointer bg-blue-600 px-4 text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-700 hover:text-white hover:shadow-md active:translate-y-0"
           >
             Keep Editing
+          </Button>
+          <Button
+            variant="outline"
+            disabled={isSaving}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onCancelEvaluationAction();
+            }}
+            className="cursor-pointer border-red-300 bg-red-600 px-4 text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-700 hover:text-white hover:shadow-md active:translate-y-0"
+          >
+            Cancel Evaluation
           </Button>
           <Button
             disabled={isSaving}

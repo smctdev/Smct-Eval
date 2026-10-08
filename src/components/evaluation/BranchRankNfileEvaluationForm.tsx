@@ -668,6 +668,10 @@ export default function BranchRankNfileEvaluationForm({
         isSaving={isSavingDraft}
         onOpenChangeAction={setShowCancelDialog}
         onKeepEditingAction={() => setShowCancelDialog(false)}
+        onCancelEvaluationAction={() => {
+          setShowCancelDialog(false);
+          handleCancel();
+        }}
         onConfirmDraftAction={async () => {
           const ok = await saveDraft();
           if (!ok) return;
