@@ -34,6 +34,7 @@ import { isEditSession } from "@/lib/evaluationEditTypes";
 import EvaluationStepNavigation from "./EvaluationStepNavigation";
 import EvaluationCancelDraftDialog from "./EvaluationCancelDraftDialog";
 import EvaluationFormCloseButton from "./EvaluationFormCloseButton";
+import EvaluationCloseConfirmDialog from "./EvaluationCloseConfirmDialog";
 import { useEvaluationDraftOnNext } from "@/hooks/useEvaluationDraftOnNext";
 import { buildEvaluationSavePayload } from "@/lib/evaluationDraftSave";
 
@@ -465,6 +466,7 @@ export default function BranchManagerEvaluationForm({
 
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const startEvaluation = () => {
@@ -588,7 +590,7 @@ export default function BranchManagerEvaluationForm({
           <div className="pointer-events-auto">
             <EvaluationFormCloseButton
               disabled={isSavingDraft}
-              onClick={handleCancel}
+              onClick={() => setShowCloseConfirm(true)}
             />
           </div>
         </div>
@@ -723,6 +725,15 @@ export default function BranchManagerEvaluationForm({
         </div>
         </div>
       </div>
+
+      <EvaluationCloseConfirmDialog
+        open={showCloseConfirm}
+        onOpenChangeAction={setShowCloseConfirm}
+        onConfirmAction={() => {
+          setShowCloseConfirm(false);
+          handleCancel();
+        }}
+      />
 
       <EvaluationCancelDraftDialog
         open={showCancelDialog}

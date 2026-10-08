@@ -29,6 +29,7 @@ import { getEvaluationApiErrorMessage } from "@/components/evaluation/evaluation
 import EvaluationStepNavigation from "./EvaluationStepNavigation";
 import EvaluationCancelDraftDialog from "./EvaluationCancelDraftDialog";
 import EvaluationFormCloseButton from "./EvaluationFormCloseButton";
+import EvaluationCloseConfirmDialog from "./EvaluationCloseConfirmDialog";
 import { useEvaluationDraftOnNext } from "@/hooks/useEvaluationDraftOnNext";
 import { buildEvaluationSavePayload } from "@/lib/evaluationDraftSave";
 import { toDateInputValue } from "@/lib/dateInputValue";
@@ -323,6 +324,7 @@ export default function EvaluationForm({
   }, []);
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const startEvaluation = () => {
@@ -997,13 +999,7 @@ export default function EvaluationForm({
           <div className="pointer-events-auto">
             <EvaluationFormCloseButton
               disabled={isSavingDraft}
-              onClick={() => {
-                if (onCancelAction) {
-                  onCancelAction();
-                } else if (onCloseAction) {
-                  onCloseAction();
-                }
-              }}
+              onClick={() => setShowCloseConfirm(true)}
             />
           </div>
         </div>
@@ -1152,6 +1148,19 @@ export default function EvaluationForm({
         </div>
         </div>
       </div>
+
+      <EvaluationCloseConfirmDialog
+        open={showCloseConfirm}
+        onOpenChangeAction={setShowCloseConfirm}
+        onConfirmAction={() => {
+          setShowCloseConfirm(false);
+          if (onCancelAction) {
+            onCancelAction();
+          } else if (onCloseAction) {
+            onCloseAction();
+          }
+        }}
+      />
 
       <EvaluationCancelDraftDialog
         open={showCancelDialog}
