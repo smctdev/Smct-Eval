@@ -28,6 +28,7 @@ import { toastMessages } from "@/lib/toastMessages";
 import { getEvaluationApiErrorMessage } from "@/components/evaluation/evaluationRecordsShared";
 import EvaluationStepNavigation from "./EvaluationStepNavigation";
 import EvaluationCancelDraftDialog from "./EvaluationCancelDraftDialog";
+import EvaluationFormCloseButton from "./EvaluationFormCloseButton";
 import { useEvaluationDraftOnNext } from "@/hooks/useEvaluationDraftOnNext";
 import { buildEvaluationSavePayload } from "@/lib/evaluationDraftSave";
 import { toDateInputValue } from "@/lib/dateInputValue";
@@ -991,9 +992,24 @@ export default function EvaluationForm({
           transform-origin: center;
         }
       `}</style>
-      <div className="max-h-[95vh] bg-gradient-to-br from-blue-50 to-indigo-100 p-6 overflow-y-auto">
-        <div className="w-full mx-auto px-4">
-          <div className="max-w-7xl mx-auto">
+      <div className="relative max-h-[95vh] bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="pointer-events-none absolute right-5 top-5 z-30">
+          <div className="pointer-events-auto">
+            <EvaluationFormCloseButton
+              disabled={isSavingDraft}
+              onClick={() => {
+                if (onCancelAction) {
+                  onCancelAction();
+                } else if (onCloseAction) {
+                  onCloseAction();
+                }
+              }}
+            />
+          </div>
+        </div>
+        <div className="max-h-[95vh] overflow-y-auto p-6">
+        <div className="mx-auto w-full px-4">
+          <div className="mx-auto max-w-7xl">
             {/* Step Numbers Indicator */}
             {currentStep > 0 && (
               <Card className="mb-6">
@@ -1134,6 +1150,7 @@ export default function EvaluationForm({
             )}
           </div>
         </div>
+        </div>
       </div>
 
       <EvaluationCancelDraftDialog
@@ -1141,14 +1158,6 @@ export default function EvaluationForm({
         isSaving={isSavingDraft}
         onOpenChangeAction={setShowCancelDialog}
         onKeepEditingAction={() => setShowCancelDialog(false)}
-        onCancelEvaluationAction={() => {
-          setShowCancelDialog(false);
-          if (onCancelAction) {
-            onCancelAction();
-          } else if (onCloseAction) {
-            onCloseAction();
-          }
-        }}
         onConfirmDraftAction={async () => {
           const ok = await saveDraft();
           if (!ok) return;

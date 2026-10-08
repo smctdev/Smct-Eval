@@ -33,6 +33,7 @@ import { submitEvaluationForm } from "@/lib/evaluationEditSubmit";
 import { isEditSession } from "@/lib/evaluationEditTypes";
 import EvaluationStepNavigation from "./EvaluationStepNavigation";
 import EvaluationCancelDraftDialog from "./EvaluationCancelDraftDialog";
+import EvaluationFormCloseButton from "./EvaluationFormCloseButton";
 import { useEvaluationDraftOnNext } from "@/hooks/useEvaluationDraftOnNext";
 import { buildEvaluationSavePayload } from "@/lib/evaluationDraftSave";
 
@@ -582,9 +583,18 @@ export default function BranchManagerEvaluationForm({
 
   return (
     <>
-      <div className="max-h-[95vh] bg-gradient-to-br from-blue-50 to-indigo-100 p-6 overflow-y-auto">
-        <div className="w-full mx-auto px-4">
-          <div className="max-w-7xl mx-auto">
+      <div className="relative max-h-[95vh] bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="pointer-events-none absolute right-5 top-5 z-30">
+          <div className="pointer-events-auto">
+            <EvaluationFormCloseButton
+              disabled={isSavingDraft}
+              onClick={handleCancel}
+            />
+          </div>
+        </div>
+        <div className="max-h-[95vh] overflow-y-auto p-6">
+        <div className="mx-auto w-full px-4">
+          <div className="mx-auto max-w-7xl">
             {/* Step Numbers Indicator */}
             {currentStep > 0 && (
               <div className="mb-6 flex items-center justify-center gap-2 flex-wrap">
@@ -711,6 +721,7 @@ export default function BranchManagerEvaluationForm({
             )}
           </div>
         </div>
+        </div>
       </div>
 
       <EvaluationCancelDraftDialog
@@ -718,10 +729,6 @@ export default function BranchManagerEvaluationForm({
         isSaving={isSavingDraft}
         onOpenChangeAction={setShowCancelDialog}
         onKeepEditingAction={() => setShowCancelDialog(false)}
-        onCancelEvaluationAction={() => {
-          setShowCancelDialog(false);
-          handleCancel();
-        }}
         onConfirmDraftAction={async () => {
           const ok = await saveDraft();
           if (!ok) return;

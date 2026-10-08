@@ -93,21 +93,7 @@ export default function WelcomeStepBranch({
   
   return (
     <div className="space-y-6">
-      {/* Close Button */}
-      {onBackAction && (
-        <div className="flex justify-end">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBackAction}
-            className="h-10 w-20 text-white hover:text-white hover:bg-red-700 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 bg-red-600"
-            aria-label="Close"
-          >
-            Close
-            <X className="h-12 w-12" />
-          </Button>
-        </div>
-      )}
+      
 
       {/* Welcome Header */}
       <div className="text-center">
