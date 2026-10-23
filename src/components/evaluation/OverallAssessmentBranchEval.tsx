@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
@@ -33,6 +32,7 @@ import {
   PRIORITY_AREA_INPUT_PLACEHOLDER,
   PRIORITY_AREAS_VALIDATION_MESSAGE,
 } from "@/lib/priorityAreasValidation";
+import OverallAssessmentPreviousButton from "./OverallAssessmentPreviousButton";
 import { useAuth, User as UserType } from "@/contexts/UserContext";
 import { usePrioritizedSupervisorName } from "@/hooks/usePrioritizedSupervisorName";
 import { CONFIG } from "../../../config/config";
@@ -3749,16 +3749,10 @@ export default function OverallAssessmentBranchEval({
 
       {/* Action Buttons */}
       <div className="flex justify-between items-center pt-20">
-        {/* Previous Button */}
-        <Button
+        <OverallAssessmentPreviousButton
+          data={data}
           onClick={handlePrevious}
-          variant="outline"
-          className="px-8 py-3 text-lg cursor-pointer bg-blue-600 text-white hover:bg-blue-700 hover:text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0"
-          size="lg"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Previous
-        </Button>
+        />
 
         {/* Center Action Buttons */}
         <div className="flex items-center space-x-4">

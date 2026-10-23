@@ -1,4 +1,6 @@
 export const PRIORITY_AREA_MIN_CHARS = 20;
+/** Started typing, but not yet a complete area. Empty fields do not lock Previous. */
+export const PRIORITY_AREA_STARTED_CHARS = 2;
 
 export type PriorityAreaFields = {
   priorityArea1?: string | null;
@@ -30,6 +32,28 @@ function fieldHasInput(value?: string | null): boolean {
 
 function isTooShort(value?: string | null): boolean {
   return fieldHasInput(value) && getTrimmedLength(value) < PRIORITY_AREA_MIN_CHARS;
+}
+
+function isStartedButIncomplete(value?: string | null): boolean {
+  const length = getTrimmedLength(value);
+  return (
+    length >= PRIORITY_AREA_STARTED_CHARS &&
+    length < PRIORITY_AREA_MIN_CHARS
+  );
+}
+
+/**
+ * True when any priority area has 2+ characters but is still under the
+ * 20-character minimum. Empty fields do not disable Previous.
+ */
+export function shouldDisablePreviousForPriorityAreas(
+  data: PriorityAreaFields
+): boolean {
+  return (
+    isStartedButIncomplete(data.priorityArea1) ||
+    isStartedButIncomplete(data.priorityArea2) ||
+    isStartedButIncomplete(data.priorityArea3)
+  );
 }
 
 /** At least one priority area must reach the minimum character count. */
@@ -84,3 +108,5 @@ export const PRIORITY_AREAS_VALIDATION_MESSAGE = `Please enter at least ${PRIORI
 export const PRIORITY_AREA_FIELD_ERROR_MESSAGE = `Enter at least ${PRIORITY_AREA_MIN_CHARS} characters in this area.`;
 
 export const PRIORITY_AREA_INPUT_PLACEHOLDER = `Enter priority area (min. ${PRIORITY_AREA_MIN_CHARS} characters if filled)`;
+
+export const PRIORITY_AREA_PREVIOUS_SAFETY_MESSAGE = `Finish any started priority area (at least ${PRIORITY_AREA_MIN_CHARS} characters) or clear it before going back.`;
