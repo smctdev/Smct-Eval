@@ -25,6 +25,7 @@ export default function EvaluationCloseConfirmDialog({
   return (
     <Dialog open={open} onOpenChangeAction={onOpenChangeAction}>
       <DialogContent
+        portalClassName="z-[80]"
         className="m-8 max-w-md"
         style={{
           animation: "dialogPopup 0.3s ease-out",

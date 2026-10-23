@@ -66,14 +66,45 @@ export function shouldSaveDraftOnNext(
   return String(editSession.sourceRecord.status ?? "").toLowerCase() === "draft";
 }
 
+export function extractDraftSubmissionId(response: unknown): number | null {
+  if (typeof response === "number" && Number.isFinite(response) && response > 0) {
+    return response;
+  }
+  if (!response || typeof response !== "object") return null;
+
+  const record = response as Record<string, unknown>;
+  const nested =
+    record.data && typeof record.data === "object"
+      ? (record.data as Record<string, unknown>)
+      : null;
+  const candidates = [
+    record.id,
+    record.evaluation_id,
+    record.evaluationId,
+    record.submission_id,
+    record.submissionId,
+    nested?.id,
+    nested?.evaluation_id,
+    nested?.evaluationId,
+    nested?.submission_id,
+    nested?.submissionId,
+  ];
+
+  for (const value of candidates) {
+    const id = Number(value);
+    if (Number.isFinite(id) && id > 0) return id;
+  }
+  return null;
+}
+
 export async function saveEvaluationStepDraft(options: {
   employeeId: number | string | null | undefined;
   draftType: EvaluationResubmitType;
   payload: EvaluationPayload | Record<string, unknown>;
   editSession?: EvaluationEditSession;
-}): Promise<"saved" | "skipped"> {
+}): Promise<{ status: "saved" | "skipped"; id: number | null }> {
   if (!shouldSaveDraftOnNext(options.editSession)) {
-    return "skipped";
+    return { status: "skipped", id: null };
   }
 
   if (options.employeeId == null || options.employeeId === "") {
@@ -82,10 +113,10 @@ export async function saveEvaluationStepDraft(options: {
     );
   }
 
-  await apiService.postEvaluationDraft(
+  const response = await apiService.postEvaluationDraft(
     options.draftType,
     options.employeeId,
     withDraftDateAliases(options.payload)
   );
-  return "saved";
+  return { status: "saved", id: extractDraftSubmissionId(response) };
 }

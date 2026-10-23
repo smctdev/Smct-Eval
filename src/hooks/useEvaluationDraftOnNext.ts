@@ -6,11 +6,13 @@ import { getEvaluationApiErrorMessage } from "@/components/evaluation/evaluation
 import {
   type EvaluationEditSession,
   type EvaluationResubmitType,
+  isEditSession,
 } from "@/lib/evaluationEditTypes";
 import {
   buildEvaluationSavePayload,
   saveEvaluationStepDraft,
 } from "@/lib/evaluationDraftSave";
+import { apiService } from "@/lib/apiService";
 import { toastMessages } from "@/lib/toastMessages";
 
 export function useEvaluationDraftOnNext(options: {
@@ -30,7 +32,9 @@ export function useEvaluationDraftOnNext(options: {
     onAdvance,
   } = options;
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isDiscardingDraft, setIsDiscardingDraft] = useState(false);
   const savingRef = useRef(false);
+  const createdDraftIdRef = useRef<number | null>(null);
 
   const buildPayloadForSave = useCallback(() => {
     return buildPayload
@@ -43,12 +47,15 @@ export function useEvaluationDraftOnNext(options: {
     savingRef.current = true;
     setIsSavingDraft(true);
     try {
-      await saveEvaluationStepDraft({
+      const result = await saveEvaluationStepDraft({
         employeeId,
         draftType,
         payload: buildPayloadForSave(),
         editSession,
       });
+      if (result.id && !isEditSession(editSession)) {
+        createdDraftIdRef.current = result.id;
+      }
       return true;
     } catch (error) {
       console.error("Evaluation draft save failed:", error);
@@ -71,5 +78,39 @@ export function useEvaluationDraftOnNext(options: {
     if (saved) onAdvance();
   }, [onAdvance, saveDraft]);
 
-  return { saveAndNext, saveDraft, isSavingDraft };
+  /** Close without keeping an in-session draft created by Next. */
+  const discardDraftAndLeave = useCallback(async (): Promise<boolean> => {
+    if (isEditSession(editSession)) return true;
+    const draftId = createdDraftIdRef.current;
+    if (!draftId) return true;
+    if (savingRef.current) return false;
+    savingRef.current = true;
+    setIsDiscardingDraft(true);
+    try {
+      await apiService.deleteSubmission(draftId);
+      createdDraftIdRef.current = null;
+      return true;
+    } catch (error) {
+      console.error("Evaluation draft discard failed:", error);
+      toastMessages.generic.error(
+        "Could not discard evaluation",
+        getEvaluationApiErrorMessage(
+          error,
+          "The evaluation was closed, but the draft may still appear in records."
+        )
+      );
+      return true;
+    } finally {
+      savingRef.current = false;
+      setIsDiscardingDraft(false);
+    }
+  }, [editSession]);
+
+  return {
+    saveAndNext,
+    saveDraft,
+    discardDraftAndLeave,
+    isSavingDraft,
+    isDiscardingDraft,
+  };
 }
