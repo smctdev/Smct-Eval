@@ -77,6 +77,18 @@ export function extractDraftSubmissionId(response: unknown): number | null {
     record.data && typeof record.data === "object"
       ? (record.data as Record<string, unknown>)
       : null;
+  const evaluation =
+    record.evaluation && typeof record.evaluation === "object"
+      ? (record.evaluation as Record<string, unknown>)
+      : nested?.evaluation && typeof nested.evaluation === "object"
+        ? (nested.evaluation as Record<string, unknown>)
+        : null;
+  const submission =
+    record.submission && typeof record.submission === "object"
+      ? (record.submission as Record<string, unknown>)
+      : nested?.submission && typeof nested.submission === "object"
+        ? (nested.submission as Record<string, unknown>)
+        : null;
   const candidates = [
     record.id,
     record.evaluation_id,
@@ -88,6 +100,8 @@ export function extractDraftSubmissionId(response: unknown): number | null {
     nested?.evaluationId,
     nested?.submission_id,
     nested?.submissionId,
+    evaluation?.id,
+    submission?.id,
   ];
 
   for (const value of candidates) {

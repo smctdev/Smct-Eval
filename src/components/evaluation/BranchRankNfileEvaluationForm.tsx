@@ -433,7 +433,13 @@ export default function BranchRankNfileEvaluationForm({
     );
   };
 
-  const { saveAndNext, saveDraft, isSavingDraft } = useEvaluationDraftOnNext({
+  const {
+    saveAndNext,
+    saveDraft,
+    discardDraftAndLeave,
+    isSavingDraft,
+    isDiscardingDraft,
+  } = useEvaluationDraftOnNext({
     employeeId: employee?.id,
     form,
     draftType: "branchRankNfile",
@@ -540,14 +546,16 @@ export default function BranchRankNfileEvaluationForm({
   return (
     <>
       <div className="relative max-h-[95vh] bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="pointer-events-none absolute right-5 top-5 z-30">
-          <div className="pointer-events-auto">
-            <EvaluationFormCloseButton
-              disabled={isSavingDraft}
-              onClick={() => setShowCloseConfirm(true)}
-            />
+        {currentStep === 1 ? (
+          <div className="pointer-events-none absolute right-5 top-5 z-30">
+            <div className="pointer-events-auto">
+              <EvaluationFormCloseButton
+                disabled={isSavingDraft || isDiscardingDraft}
+                onClick={() => setShowCloseConfirm(true)}
+              />
+            </div>
           </div>
-        </div>
+        ) : null}
         <div className="max-h-[95vh] overflow-y-auto p-6">
         <div className="mx-auto w-full px-4">
           <div className="mx-auto max-w-7xl">
@@ -678,8 +686,10 @@ export default function BranchRankNfileEvaluationForm({
 
       <EvaluationCloseConfirmDialog
         open={showCloseConfirm}
+        isDiscarding={isDiscardingDraft}
         onOpenChangeAction={setShowCloseConfirm}
-        onConfirmAction={() => {
+        onConfirmAction={async () => {
+          await discardDraftAndLeave();
           setShowCloseConfirm(false);
           handleCancel();
         }}
