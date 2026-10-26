@@ -85,6 +85,7 @@ import {
   isReviewApproverActionable,
   isReviewEvaluatorCurrentUser,
   getViewEvaluationErrorMessage,
+  getDeleteEvaluationErrorMessage,
   getEvaluationApiErrorMessage,
   ratingPillClass,
 } from "@/components/evaluation/evaluationRecordsShared";
@@ -414,6 +415,9 @@ export default function OverviewTab() {
   const [rejectModalKind, setRejectModalKind] = useState<"draft" | "approval">(
     "draft"
   );
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [activeRecordsTab, setActiveRecordsTab] =
     useState<EvaluationRecordsTabId>("all");
   const [tabRecordCounts, setTabRecordCounts] = useState({
@@ -937,6 +941,39 @@ export default function OverviewTab() {
   const handleViewEvaluation = (review: Review) => {
     setViewSubmissionId(review.id);
     setIsViewResultsModalOpen(true);
+  };
+
+  const openDeleteModal = (review: Review) => {
+    if (!isReviewDraft(review)) return;
+    setReviewToDelete(review);
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setReviewToDelete(null);
+  };
+
+  const handleDeleteEvaluation = async (submission: Review | null) => {
+    if (!submission || !isReviewDraft(submission)) return;
+    setIsDeleting(true);
+    try {
+      await clientDataService.deleteSubmission(submission.id);
+      await handleRefresh();
+      toastMessages.evaluation.deleted(
+        `${submission.employee?.fname ?? ""} ${submission.employee?.lname ?? ""}`.trim() ||
+          "employee"
+      );
+      closeDeleteModal();
+    } catch (error) {
+      setEvaluationActionError({
+        title: "Unable to Delete Evaluation",
+        message: getDeleteEvaluationErrorMessage(error),
+      });
+      closeDeleteModal();
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const closeEditEvaluationModal = async () => {
@@ -1709,8 +1746,10 @@ export default function OverviewTab() {
                                   review={review}
                                   currentUserId={user?.id}
                                   draftOwnedByCurrentUser={isOwnDraft}
+                                  restrictDeleteToDraft
                                   onViewAction={() => handleViewEvaluation(review)}
                                   onEditAction={() => handleEditEvaluation(review)}
+                                  onDeleteAction={() => openDeleteModal(review)}
                                   onAcceptAction={
                                     showApproverActions
                                       ? () => void handleAcceptApproval(review)
@@ -1724,6 +1763,9 @@ export default function OverviewTab() {
                                       : isReviewDraft(review) && !isOwnDraft
                                         ? () => openRejectDraftModal(review)
                                         : undefined
+                                  }
+                                  deleting={
+                                    isDeleting && reviewToDelete?.id === review.id
                                   }
                                   accepting={acceptingReviewId === review.id}
                                   rejecting={rejectingReviewId === review.id}
@@ -1852,6 +1894,64 @@ export default function OverviewTab() {
                     </div>
                   ) : (
                     "Reject Draft"
+                  )}
+                </Button>
+              </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={isDeleteModalOpen}
+          onOpenChangeAction={(open) => {
+            if (!open) {
+              closeDeleteModal();
+            } else {
+              setIsDeleteModalOpen(true);
+            }
+          }}
+        >
+          <DialogContent className={`max-w-md p-6 ${dialogAnimationClass}`}>
+            <DialogHeader className="rounded-lg bg-red-50 pb-4">
+              <DialogTitle className="flex items-center gap-2 text-red-800">
+                <span className="text-xl">⚠️</span>
+                Delete Draft Evaluation
+              </DialogTitle>
+              <DialogDescription className="text-red-700">
+                This action cannot be undone. Are you sure you want to
+                permanently delete this draft evaluation for{" "}
+                {[
+                  reviewToDelete?.employee?.fname,
+                  reviewToDelete?.employee?.lname,
+                ]
+                  .filter(Boolean)
+                  .join(" ")
+                  .trim() || "this employee"}
+                ?
+              </DialogDescription>
+            </DialogHeader>
+
+            <DialogFooter className="pt-4">
+              <div className="flex w-full justify-end space-x-4">
+                <Button
+                  variant="outline"
+                  onClick={closeDeleteModal}
+                  className="cursor-pointer bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="cursor-pointer bg-red-600 text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => void handleDeleteEvaluation(reviewToDelete)}
+                  disabled={isDeleting || !reviewToDelete}
+                >
+                  {isDeleting ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Deleting...</span>
+                    </div>
+                  ) : (
+                    "Delete Permanently"
                   )}
                 </Button>
               </div>

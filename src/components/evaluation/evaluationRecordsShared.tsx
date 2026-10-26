@@ -1019,6 +1019,7 @@ export function EvalRecordRowActions({
   draftOwnedByCurrentUser = false,
   allowPendingEditByCurrentUser = false,
   allowDraftEdit = false,
+  restrictDeleteToDraft = false,
   deleting,
   accepting,
   rejecting,
@@ -1036,6 +1037,8 @@ export function EvalRecordRowActions({
   allowPendingEditByCurrentUser?: boolean;
   /** When true on a draft row, show Edit (e.g. HR may edit any draft). */
   allowDraftEdit?: boolean;
+  /** When true, show Delete on every row but enable it only for draft status. */
+  restrictDeleteToDraft?: boolean;
   deleting?: boolean;
   accepting?: boolean;
   rejecting?: boolean;
@@ -1051,7 +1054,38 @@ export function EvalRecordRowActions({
     isDraft &&
     !showDraftEdit &&
     (onAcceptAction != null || onRejectAction != null);
-  const canDelete = isReviewDeletable(review) && onDeleteAction != null;
+  const deleteAllowed = restrictDeleteToDraft
+    ? isDraft
+    : isReviewDeletable(review);
+  const showDelete =
+    onDeleteAction != null && (restrictDeleteToDraft || deleteAllowed);
+  const deleteDisabled = deleting || !deleteAllowed;
+  const deleteTitle = !deleteAllowed
+    ? "Delete is only available while this evaluation is a draft"
+    : isDraft
+      ? "Delete this draft evaluation"
+      : "Delete this evaluation record";
+  const deleteButton = showDelete ? (
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      onClick={deleteDisabled ? undefined : onDeleteAction}
+      disabled={deleteDisabled}
+      aria-label="Delete evaluation"
+      title={deleteTitle}
+      className="h-8 w-8 shrink-0 cursor-pointer border-red-200 bg-red-100 text-red-700 hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:hover:bg-slate-100 disabled:hover:text-slate-400 lg:h-8 lg:w-auto lg:px-2 lg:transition-all lg:duration-200 lg:hover:-translate-y-0.5 lg:hover:shadow-md lg:active:translate-y-0 disabled:lg:hover:translate-y-0 disabled:lg:hover:shadow-none"
+    >
+      {deleting ? (
+        <span className="text-xs lg:hidden">…</span>
+      ) : (
+        <Trash2 className="h-4 w-4 lg:hidden" />
+      )}
+      <span className="hidden lg:inline">
+        {deleting ? "Deleting…" : "❌ Delete"}
+      </span>
+    </Button>
+  ) : null;
   const editDisabledForEvaluator = isReviewEditDisabledForEvaluator(
     review,
     currentUserId
@@ -1132,6 +1166,7 @@ export function EvalRecordRowActions({
             </span>
           </Button>
         ) : null}
+        {deleteButton}
       </div>
     );
   }
@@ -1162,27 +1197,7 @@ export function EvalRecordRowActions({
           <Pencil className="h-4 w-4 lg:hidden" />
           <span className="hidden lg:inline">✏️ Edit</span>
         </Button>
-        {canDelete ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={onDeleteAction}
-            disabled={deleting}
-            aria-label="Delete evaluation"
-            title="Delete this draft evaluation"
-            className="h-8 w-8 shrink-0 cursor-pointer border-red-200 bg-red-100 text-red-700 hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 lg:h-8 lg:w-auto lg:px-2 lg:transition-all lg:duration-200 lg:hover:-translate-y-0.5 lg:hover:shadow-md lg:active:translate-y-0"
-          >
-            {deleting ? (
-              <span className="text-xs lg:hidden">…</span>
-            ) : (
-              <Trash2 className="h-4 w-4 lg:hidden" />
-            )}
-            <span className="hidden lg:inline">
-              {deleting ? "Deleting…" : "❌ Delete"}
-            </span>
-          </Button>
-        ) : null}
+        {deleteButton}
       </div>
     );
   }
@@ -1243,6 +1258,7 @@ export function EvalRecordRowActions({
             </span>
           </Button>
         ) : null}
+        {deleteButton}
       </div>
     );
   }
@@ -1275,27 +1291,7 @@ export function EvalRecordRowActions({
           <span className="hidden lg:inline">✏️ Edit</span>
         </Button>
       ) : null}
-      {canDelete ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={onDeleteAction}
-          disabled={deleting}
-          aria-label="Delete evaluation"
-          title="Delete this evaluation record"
-          className="h-8 w-8 shrink-0 cursor-pointer border-red-200 bg-red-100 text-red-700 hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 lg:h-8 lg:w-auto lg:px-2 lg:transition-all lg:duration-200 lg:hover:-translate-y-0.5 lg:hover:shadow-md lg:active:translate-y-0"
-        >
-          {deleting ? (
-            <span className="text-xs lg:hidden">…</span>
-          ) : (
-            <Trash2 className="h-4 w-4 lg:hidden" />
-          )}
-          <span className="hidden lg:inline">
-            {deleting ? "Deleting…" : "❌ Delete"}
-          </span>
-        </Button>
-      ) : null}
+      {deleteButton}
     </div>
   );
 }
